@@ -95,10 +95,16 @@ class MyApp(tk.Tk):
 
     def display_interface_settings(self, *args):
         selected_interface = self.interface_var.get()
+
         if selected_interface:
             interface_module = getattr(self, selected_interface, None)
+
             if interface_module:
-                # Update the current interface with the new settings
+                # Remove the current interface widget if it exists
+                if self.current_interface:
+                    self.current_interface.pack_forget()  # Unpack the current interface widget
+
+                # Create and display the new interface widget
                 self.current_interface = interface_module.Interface(self.interface_wireframe)
                 self.current_interface.pack(fill='both', expand=True)
 
