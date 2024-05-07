@@ -1,17 +1,17 @@
 from tkinter import ttk
 import tkinter as tk
-import binascii
 
 class ModuleApplication(tk.Frame):
-    def __init__(self, parent, interface_module=None):
+    def __init__(self, parent, interface_module=None, obi_instance=None):
         super().__init__(parent)
         self.parent = parent
         self.interface = None
         self.interface_module = interface_module
+        self.obi_instance = obi_instance
+        self.create_widgets()
 
     def set_interface(self, interface_instance):
         self.interface = interface_instance
-        self.create_widgets()
 
     def create_widgets(self):
         label = tk.Label(self, text="Makita", font=('Helvetica', 16))
@@ -96,15 +96,13 @@ class ModuleApplication(tk.Frame):
 
             self.insert_battery_data(battery_data)
 
-
     def on_all_leds_on_click(self):
         if self.interface:
-            request = [0x01, 3, 1, 0x33, 0xd9, 0x96, 0xa5]
+            request = [0x01, 3, 0, 0x33, 0xd9, 0x96, 0xa5]
             self.interface.request(request)
 
-            request = [0x01, 2, 1, 0x33, 0xda, 0x31]
+            request = [0x01, 2, 0, 0x33, 0xda, 0x31]
             self.interface.request(request)
-
 
     def on_all_leds_off_click(self):
         if self.interface:

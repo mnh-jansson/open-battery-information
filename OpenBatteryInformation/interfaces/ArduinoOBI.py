@@ -4,9 +4,10 @@ import serial
 import serial.tools.list_ports
 
 class Interface(tk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, obi_instance):
         super().__init__(parent)
         self.parent = parent
+        self.obi_instance = obi_instance
         self.serial = serial.Serial()
         self.serial.timeout = 1
         self.create_widgets()
@@ -39,18 +40,21 @@ class Interface(tk.Frame):
             self.serial.port = selected_port
             try:
                 self.serial.open()
-                print(f"Opened serial port: {selected_port}")
+                self.obi_instance.update_debug(f"Opened serial port: {selected_port}")
                 self.connect_button.config(text="Disconnect", command=self.close_serial_port)
             except Exception as e:
-                print(f"Error opening serial port {selected_port}: {e}")
+                self.obi_instance.update_debug(f"Error opening serial port {selected_port}: {e}")
 
     def close_serial_port(self):
         if self.serial.is_open:
             self.serial.close()
-            print("Closed serial port")
+            self.obi_instance.update_debug("Closed serial port")
             self.connect_button.config(text="Connect", command=self.open_serial_port)
 
     def request(self, request):
+        self.obi_instance.update_debug(f">> {' '.join(f'{x:02X}' for x in request[3:])}")
         self.serial.reset_input_buffer()
         self.serial.write(request)
-        return self.serial.read(request[2] + 2)
+        response = self.serial.read(request[2] + 2)
+        self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
+        return response
