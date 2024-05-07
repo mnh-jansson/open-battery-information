@@ -10,6 +10,8 @@ class OBI(tk.Tk):
         self.title("OBI-1")
         self.geometry("1270x720")
 
+        self.main_app = None
+
         self.sidebar = tk.LabelFrame(self, text="Settings", width=200, padx=10, pady=10)
         self.sidebar.pack(fill='y', side='left')
 
@@ -68,23 +70,20 @@ class OBI(tk.Tk):
 
     def display_module(self, event=None):
         selected_module = self.module_var.get()
-        selected_interface = self.interface_var.get()
-
-        if selected_module and selected_interface:
+        
+        if selected_module:
             try:
                 module_to_display = importlib.import_module(f"modules.{selected_module}")
-                interface_module = importlib.import_module(f"interfaces.{selected_interface}")
-
                 self.clear_main_window()
 
-                main_app = module_to_display.ModuleApplication(self.main_window, interface_module.Interface, self)
-                main_app.set_interface(self.current_interface)
+                self.main_app = module_to_display.ModuleApplication(self.main_window, None, self)
+                self.main_app.set_interface(self.current_interface)
+
             except ImportError as e:
-                self.update_debug(f"Error loading module or interface: {e}")
+                self.update_debug(f"Error loading module: {e}")
 
     def display_interface_settings(self, event=None):
         selected_interface = self.interface_var.get()
-
         if selected_interface:
             try:
                 interface_module = importlib.import_module(f"interfaces.{selected_interface}")
@@ -94,6 +93,10 @@ class OBI(tk.Tk):
 
                 self.current_interface = interface_module.Interface(self.interface_wireframe, self)
                 self.current_interface.pack(fill='both', expand=True)
+
+                if self.main_app and hasattr(self.main_app, 'set_interface') and callable(self.main_app.set_interface):
+                    self.main_app.set_interface(self.current_interface)
+
             except ImportError as e:
                 self.update_debug(f"Error loading interface: {e}")
 
