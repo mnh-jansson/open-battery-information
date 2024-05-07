@@ -3,7 +3,7 @@ import tkinter as tk
 import binascii
 
 class ModuleApplication(tk.Frame):
-    def __init__(self, parent, interface_module):
+    def __init__(self, parent, interface_module=None):
         super().__init__(parent)
         self.parent = parent
         self.interface = None
