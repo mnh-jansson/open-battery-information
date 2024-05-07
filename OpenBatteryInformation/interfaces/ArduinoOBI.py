@@ -8,7 +8,7 @@ class Interface(tk.Frame):
         super().__init__(parent)
         self.parent = parent
         self.serial = serial.Serial()
-        self.serial.timeout = 5
+        self.serial.timeout = 1
         self.create_widgets()
 
     def create_widgets(self):
