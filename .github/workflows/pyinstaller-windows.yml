@@ -18,9 +18,9 @@ jobs:
     - name: Package Application
       uses: JackMcKew/pyinstaller-action-windows@main
       with:
-        path: src
+        path: OpenBatteryInformation
 
     - uses: actions/upload-artifact@v2
       with:
         name: OBI.exe
-        path: src/dist/windows
+        path: OpenBatteryInformation/dist/windows
