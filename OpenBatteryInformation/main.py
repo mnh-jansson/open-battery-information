@@ -1,3 +1,5 @@
+import os
+import sys
 import tkinter as tk
 from tkinter import ttk
 import importlib.util
@@ -11,6 +13,8 @@ class OBI(tk.Tk):
         self.geometry("1270x720")
 
         self.main_app = None
+        self.loaded_modules = {}
+        self.loaded_interfaces = {}
 
         self.sidebar = tk.LabelFrame(self, text="Settings", width=200, padx=10, pady=10)
         self.sidebar.pack(fill='y', side='left')
@@ -54,15 +58,21 @@ class OBI(tk.Tk):
 
         self.current_interface = None
 
+    def get_resource_path(self, relative_path):
+        """ Get the absolute path to the resource, works for dev and for PyInstaller """
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.abspath("."), relative_path)
+
     def load_modules(self):
-        modules_dir = 'modules'
-        module_names = [name for _, name, _ in pkgutil.iter_modules([modules_dir])]
-        self.module_combobox['values'] = module_names
+        modules_dir = self.get_resource_path('modules')
+        module_names = sorted({name for _, name, _ in pkgutil.iter_modules([modules_dir])})
+        self.module_combobox['values'] = list(module_names)
 
     def load_interfaces(self):
-        interfaces_dir = 'interfaces'
-        interface_names = [name for _, name, _ in pkgutil.iter_modules([interfaces_dir])]
-        self.interface_combobox['values'] = interface_names
+        interfaces_dir = self.get_resource_path('interfaces')
+        interface_names = sorted({name for _, name, _ in pkgutil.iter_modules([interfaces_dir])})
+        self.interface_combobox['values'] = list(interface_names)
 
     def display_default_content(self):
         self.clear_main_window()
@@ -70,10 +80,17 @@ class OBI(tk.Tk):
 
     def display_module(self, event=None):
         selected_module = self.module_var.get()
-        
+
         if selected_module:
             try:
-                module_to_display = importlib.import_module(f"modules.{selected_module}")
+                if selected_module not in self.loaded_modules:
+                    module_to_display = importlib.import_module(f"modules.{selected_module}")
+                    self.loaded_modules[selected_module] = module_to_display
+                    self.update_debug(f"Imported module: {selected_module}")
+                else:
+                    module_to_display = self.loaded_modules[selected_module]
+                    self.update_debug(f"Using cached module: {selected_module}")
+
                 self.clear_main_window()
 
                 self.main_app = module_to_display.ModuleApplication(self.main_window, None, self)
@@ -86,7 +103,13 @@ class OBI(tk.Tk):
         selected_interface = self.interface_var.get()
         if selected_interface:
             try:
-                interface_module = importlib.import_module(f"interfaces.{selected_interface}")
+                if selected_interface not in self.loaded_interfaces:
+                    interface_module = importlib.import_module(f"interfaces.{selected_interface}")
+                    self.loaded_interfaces[selected_interface] = interface_module
+                    self.update_debug(f"Imported interface: {selected_interface}")
+                else:
+                    interface_module = self.loaded_interfaces[selected_interface]
+                    self.update_debug(f"Using cached interface: {selected_interface}")
 
                 if self.current_interface:
                     self.current_interface.pack_forget()
