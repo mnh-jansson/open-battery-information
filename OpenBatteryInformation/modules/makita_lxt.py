@@ -31,7 +31,7 @@ class ModuleApplication(tk.Frame):
         self.interface = interface_instance
 
     def create_widgets(self):
-        label = tk.Label(self, text="Makita", font=('Helvetica', 16))
+        label = tk.Label(self, text=get_display_name(), font=('Helvetica', 16))
         label.pack(pady=20)
 
         columns_frame = tk.Frame(self)
@@ -46,10 +46,12 @@ class ModuleApplication(tk.Frame):
 
         button1 = tk.Button(column_frame, text="Read static data", command=self.on_read_static_click)
         button1.pack(pady=10)
+        button1.config(width=20)
         self.buttons.append(button1)
 
         button2 = tk.Button(column_frame, text="Read battery data", command=self.on_read_data_click, state=tk.DISABLED)
         button2.pack(pady=10)
+        button2.config(width=20)
         self.buttons.append(button2)
 
         columns_frame.grid_columnconfigure(1, weight=1)
@@ -58,10 +60,12 @@ class ModuleApplication(tk.Frame):
 
         button3 = tk.Button(column_frame, text="All leds ON", command=self.on_all_leds_on_click, state=tk.DISABLED)
         button3.pack(pady=10)
+        button3.config(width=20)
         self.buttons.append(button3)
 
         button4 = tk.Button(column_frame, text="All leds OFF", command=self.on_all_leds_off_click, state=tk.DISABLED)
         button4.pack(pady=10)
+        button4.config(width=20)
         self.buttons.append(button4)
 
         columns_frame.grid_columnconfigure(2, weight=1)
@@ -70,10 +74,12 @@ class ModuleApplication(tk.Frame):
 
         button5 = tk.Button(column_frame, text="Reset errors", command=self.on_reset_errors_click, state=tk.DISABLED)
         button5.pack(pady=10)
+        button5.config(width=20)
         self.buttons.append(button5)
 
         button6 = tk.Button(column_frame, text="Reset battery message", command=self.on_reset_message_click, state=tk.DISABLED)
         button6.pack(pady=10)
+        button6.config(width=20)
         self.buttons.append(button6)
 
         self.tree = ttk.Treeview(self, columns=("Value"))

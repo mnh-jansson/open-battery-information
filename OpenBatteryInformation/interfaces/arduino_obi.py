@@ -27,9 +27,12 @@ class Interface(tk.Frame):
 
         self.connect_button = tk.Button(self, text="Connect", command=self.toggle_connection)
         self.connect_button.pack(pady=10)
+        self.connect_button.config(width=20)
+
 
         self.refresh_button = tk.Button(self, text="Refresh list", command=self.refresh_serial_list)
         self.refresh_button.pack(pady=10)
+        self.refresh_button.config(width=20)
 
     def refresh_serial_list(self):
         ports = self.get_available_serial_ports()
