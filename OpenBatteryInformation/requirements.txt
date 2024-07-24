@@ -1,1 +1,2 @@
 pyserial==3.5
+pillow==10.4.0
