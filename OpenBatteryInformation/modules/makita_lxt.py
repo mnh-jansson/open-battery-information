@@ -7,12 +7,10 @@ def get_display_name():
 
 READ_STATIC_REQUEST = [0x01, 2, 16, 0xcc, 0xdc, 0x0c]
 READ_DATA_REQUEST = [0x01, 4, 29, 0xcc, 0xd7, 0x00, 0x00, 0xff]
-ALL_LEDS_ON_REQUEST_1 = [0x01, 3, 0, 0x33, 0xd9, 0x96, 0xa5]
-ALL_LEDS_ON_REQUEST_2 = [0x01, 2, 0, 0x33, 0xda, 0x31]
-ALL_LEDS_OFF_REQUEST_1 = [0x01, 3, 0, 0x33, 0xd9, 0x96, 0xa5]
-ALL_LEDS_OFF_REQUEST_2 = [0x01, 2, 0, 0x33, 0xda, 0x34]
-RESET_ERRORS_REQUEST_1 = [0x01, 3, 0, 0x33, 0xd9, 0x96, 0xa5]
-RESET_ERRORS_REQUEST_2 = [0x01, 2, 0, 0x33, 0xda, 0x04]
+ENTER_TESTMODE = [0x01, 3, 0, 0x33, 0xd9, 0x96, 0xa5]
+ALL_LEDS_ON_REQUEST = [0x01, 2, 0, 0x33, 0xda, 0x31]
+ALL_LEDS_OFF_REQUEST = [0x01, 2, 0, 0x33, 0xda, 0x34]
+RESET_ERRORS_REQUEST = [0x01, 2, 0, 0x33, 0xda, 0x04]
 RESET_MESSAGE_REQUESTS = [
     [0x01, 3, 0, 0x33, 0xd9, 0x96, 0xa5],
     [0x01, 2, 0, 0xcc, 0xf0, 0x00],
@@ -109,12 +107,12 @@ class ModuleApplication(tk.Frame):
 
     def on_read_static_click(self):
         if self.interface:
-            response = self.interface.request(READ_STATIC_REQUEST)
-            
+                        
             try:
+                response = self.interface.request(READ_STATIC_REQUEST)
                 model = response[2:9].decode('utf-8')
             except Exception as e:
-                tk.messagebox.showerror("Error", "Unexpected or no response")
+                tk.messagebox.showerror("Error", f"{e}")
                 return
 
             data = {"Model": model}
@@ -123,10 +121,12 @@ class ModuleApplication(tk.Frame):
 
     def on_read_data_click(self):
         if self.interface:
-            response = self.interface.request(READ_DATA_REQUEST)
-            if all(byte == 0xff for byte in response[2:]) or not response:
-                tk.messagebox.showerror("Error", "Unexpected or no response")
-                return
+            try:
+                response = self.interface.request(READ_DATA_REQUEST)
+            except Exception as e:
+                tk.messagebox.showerror("Error", f"{e}")
+                return   
+
             v_pack = int.from_bytes(response[2:4], byteorder='little') / 1000
             v_cell1 = int.from_bytes(response[4:6], byteorder='little') / 1000
             v_cell2 = int.from_bytes(response[6:8], byteorder='little') / 1000
@@ -153,18 +153,18 @@ class ModuleApplication(tk.Frame):
 
     def on_all_leds_on_click(self):
         if self.interface:
-            self.interface.request(ALL_LEDS_ON_REQUEST_1)
-            self.interface.request(ALL_LEDS_ON_REQUEST_2)
+            self.interface.request(ENTER_TESTMODE)
+            self.interface.request(ALL_LEDS_ON_REQUEST)
 
     def on_all_leds_off_click(self):
         if self.interface:
-            self.interface.request(ALL_LEDS_OFF_REQUEST_1)
-            self.interface.request(ALL_LEDS_OFF_REQUEST_2)
+            self.interface.request(ENTER_TESTMODE)
+            self.interface.request(ALL_LEDS_OFF_REQUEST)
 
     def on_reset_errors_click(self):
         if self.interface:
-            self.interface.request(RESET_ERRORS_REQUEST_1)
-            self.interface.request(RESET_ERRORS_REQUEST_2)
+            self.interface.request(ENTER_TESTMODE)
+            self.interface.request(RESET_ERRORS_REQUEST)
 
     def on_reset_message_click(self):
         if self.interface:

@@ -28,6 +28,14 @@ class Interface(tk.Frame):
         self.connect_button = tk.Button(self, text="Connect", command=self.toggle_connection)
         self.connect_button.pack(pady=10)
 
+        self.refresh_button = tk.Button(self, text="Refresh list", command=self.refresh_serial_list)
+        self.refresh_button.pack(pady=10)
+
+    def refresh_serial_list(self):
+        ports = self.get_available_serial_ports()
+        self.conf_port["values"] = ports
+
+
     def get_available_serial_ports(self):
         ports = [port.device for port in serial.tools.list_ports.comports()]
         return ports
@@ -57,12 +65,24 @@ class Interface(tk.Frame):
 
     def request(self, request, max_attempts=3):
         self.obi_instance.update_debug(f">> {' '.join(f'{x:02X}' for x in request[3:])}")
-        for attempt in range(max_attempts):
-            self.serial.reset_input_buffer()
-            self.serial.write(request)
-            response = self.serial.read(request[2] + 2)
-            if len(response) == request[2] + 2:
-                self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
-                return response
-        return 
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                self.serial.reset_input_buffer()
+                self.serial.write(request)
+
+                response = self.serial.read(request[2] + 2)
+
+                if request[2] == 0:
+                    return
+
+                if len(response) == request[2] + 2:
+                    if all(byte == 0xff for byte in response[2:]):
+                        raise ValueError("Invalid response: all bytes are 0xFF")
+                    self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
+                    return response
+
+            except Exception as e:
+                self.obi_instance.update_debug(f"Attempt {attempt}/{max_attempts} failed: {e}")
+        raise Exception(f"Failed to get a valid response after {max_attempts} attempts.")
 
