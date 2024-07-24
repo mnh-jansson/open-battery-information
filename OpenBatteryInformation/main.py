@@ -29,6 +29,10 @@ class OBI(tk.Tk):
         self.current_interface = None
 
     def set_icon(self, icon_path):
+        if hasattr(sys, '_MEIPASS'):
+            # When running from a PyInstaller bundle
+            icon_path = os.path.join(sys._MEIPASS, icon_path)
+
         icon = tk.PhotoImage(file=icon_path)
         self.iconphoto(False, icon)
 

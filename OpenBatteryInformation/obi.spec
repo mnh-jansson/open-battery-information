@@ -8,7 +8,7 @@ a = Analysis(
     datas=[
         ('modules', 'modules'),
         ('interfaces', 'interfaces'),
-        ('icon.png', 'icon.png')
+        ('icon.png', '.')
     ],
     hiddenimports=['modules', 'interfaces', 'interfaces.ArduinoOBI', 'modules.Makita'],
     hookspath=[],
@@ -25,7 +25,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='obi',
+    name='OpenBatteryInformation',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -38,4 +38,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='icon.png',
 )
