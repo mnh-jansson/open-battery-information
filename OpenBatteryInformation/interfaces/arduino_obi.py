@@ -3,6 +3,10 @@ from tkinter import ttk
 import serial
 import serial.tools.list_ports
 
+@staticmethod
+def get_display_name():
+    return "Arduino OBI"
+
 class Interface(tk.Frame):
     def __init__(self, parent, obi_instance):
         super().__init__(parent)
@@ -51,10 +55,14 @@ class Interface(tk.Frame):
             self.obi_instance.update_debug("Closed serial port")
             self.connect_button.config(text="Connect", command=self.open_serial_port)
 
-    def request(self, request):
+    def request(self, request, max_attempts=3):
         self.obi_instance.update_debug(f">> {' '.join(f'{x:02X}' for x in request[3:])}")
-        self.serial.reset_input_buffer()
-        self.serial.write(request)
-        response = self.serial.read(request[2] + 2)
-        self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
-        return response
+        for attempt in range(max_attempts):
+            self.serial.reset_input_buffer()
+            self.serial.write(request)
+            response = self.serial.read(request[2] + 2)
+            if len(response) == request[2] + 2:
+                self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
+                return response
+        return 
+
