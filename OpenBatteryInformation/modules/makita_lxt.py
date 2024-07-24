@@ -124,6 +124,9 @@ class ModuleApplication(tk.Frame):
     def on_read_data_click(self):
         if self.interface:
             response = self.interface.request(READ_DATA_REQUEST)
+            if all(byte == 0xff for byte in response[2:]) or not response:
+                tk.messagebox.showerror("Error", "Unexpected or no response")
+                return
             v_pack = int.from_bytes(response[2:4], byteorder='little') / 1000
             v_cell1 = int.from_bytes(response[4:6], byteorder='little') / 1000
             v_cell2 = int.from_bytes(response[6:8], byteorder='little') / 1000
