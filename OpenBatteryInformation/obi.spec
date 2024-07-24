@@ -8,6 +8,7 @@ a = Analysis(
     datas=[
         ('modules', 'modules'),
         ('interfaces', 'interfaces'),
+        ('icon.png', 'icon.png')
     ],
     hiddenimports=['modules', 'interfaces', 'interfaces.ArduinoOBI', 'modules.Makita'],
     hookspath=[],
