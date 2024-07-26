@@ -66,7 +66,9 @@ class Interface(tk.Frame):
             self.obi_instance.update_debug("Closed serial port")
             self.connect_button.config(text="Connect", command=self.open_serial_port)
 
-    def request(self, request, max_attempts=3):
+    def request(self, request, max_attempts=2):
+        if not self.serial.is_open:
+            raise Exception(f"Serial port is not open.")
         self.obi_instance.update_debug(f">> {' '.join(f'{x:02X}' for x in request[3:])}")
 
         for attempt in range(1, max_attempts + 1):
@@ -75,14 +77,16 @@ class Interface(tk.Frame):
                 self.serial.write(request)
 
                 response = self.serial.read(request[2] + 2)
-
+                #print(response)
+                self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[0:])}")
                 if request[2] == 0:
                     return
 
                 if len(response) == request[2] + 2:
+                    
                     if all(byte == 0xff for byte in response[2:]):
                         raise ValueError("Invalid response: all bytes are 0xFF")
-                    self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
+                    
                     return response
 
             except Exception as e:

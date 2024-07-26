@@ -2,6 +2,7 @@
 #include "OneWire2.h"
 
 OneWire makita(6);
+//SoftwareSerial softSerial(2, 3, true); // RX, TX, inverse logic
 
 void cmd_and_read_33(byte *cmd, uint8_t cmd_len, byte *rsp, uint8_t rsp_len) {
 	int i;
@@ -45,8 +46,12 @@ void cmd_and_read_cc(byte *cmd, uint8_t cmd_len, byte *rsp, uint8_t rsp_len) {
 
 void setup() {
 	Serial.begin (9600);
+    // One-wire
 	pinMode(8, OUTPUT);
 	pinMode(2, OUTPUT);
+
+    // Software serial
+    //softSerial.begin(9600);
 
 }
 
@@ -69,12 +74,13 @@ void read_usb() {
             len = Serial.read();
             rsp_len = Serial.read();
             cmd = Serial.read();
+            if (len > 0) {
+                for (int i = 0; i < len; i++) {
+                    while (Serial.available() < 1) {
 
-            for (int i = 0; i < len; i++) {
-				while (Serial.available() < 1) {
-
-				}
-                data[i] = Serial.read();
+                    }
+                    data[i] = Serial.read();
+                }
             }
         }
         else {
@@ -85,6 +91,40 @@ void read_usb() {
 	    delay(400);
 
         switch(cmd) {
+            case 0x31:
+            rsp[0] = 0x04;
+            makita.reset();
+            delayMicroseconds(400);
+            makita.write(0xcc,0);
+            delayMicroseconds(90);
+            makita.write(0x99,0);
+            delay(400);
+            makita.reset();
+            delayMicroseconds(400);
+            makita.write(0x31,0);
+            delayMicroseconds(90);
+            rsp[3] = makita.read(); 
+            delayMicroseconds(90);
+            rsp[2] = makita.read(); 
+            delayMicroseconds(90);
+            break;
+            case 0x32:
+            rsp[0] = 0x05;
+            makita.reset();
+            delayMicroseconds(400);
+            makita.write(0xcc,0);
+            delayMicroseconds(90);
+            makita.write(0x99,0);
+            delay(400);
+            makita.reset();
+            delayMicroseconds(400);
+            makita.write(0x32,0);
+            delayMicroseconds(90);
+            rsp[3] = makita.read(); 
+            delayMicroseconds(90);
+            rsp[2] = makita.read(); 
+            delayMicroseconds(90);
+            break;
             case 0x33:
             cmd_and_read_33(data, len, &rsp[2], rsp_len);
 			rsp[0] = 0x02;
@@ -98,7 +138,7 @@ void read_usb() {
         }
         rsp[1] = rsp_len;
         send_usb(rsp, rsp_len + 2);
-
+        
         digitalWrite(8, LOW);
     }
 }
