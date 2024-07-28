@@ -3,7 +3,6 @@ from tkinter import ttk
 import serial
 import serial.tools.list_ports
 
-@staticmethod
 def get_display_name():
     return "Arduino OBI"
 
