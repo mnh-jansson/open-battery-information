@@ -9,19 +9,16 @@ def get_display_name():
 # Command Definitions
 MODEL_CMD           = [0x01, 0x02, 0x10, 0xCC, 0xDC, 0x0C]
 READ_DATA_REQUEST   = [0x01, 0x04, 0x1D, 0xCC, 0xD7, 0x00, 0x00, 0xFF]
-TESTMODE_CMD        = [0x01, 0x03, 0x00, 0x33, 0xD9, 0x96, 0xA5]
-LEDS_ON_CMD         = [0x01, 0x02, 0x00, 0x33, 0xDA, 0x31]
-LEDS_OFF_CMD        = [0x01, 0x02, 0x00, 0x33, 0xDA, 0x34]
-RESET_ERROR_CMD     = [0x01, 0x02, 0x00, 0x33, 0xDA, 0x04]
+TESTMODE_CMD        = [0x01, 0x03, 0x09, 0x33, 0xD9, 0x96, 0xA5]
+LEDS_ON_CMD         = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x31]
+LEDS_OFF_CMD        = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x34]
+RESET_ERROR_CMD     = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x04]
+ROMID_CHARGER_CMD   = [0x01, 0x02, 0x28, 0x33, 0xF0, 0x00]
+CHARGER_CMD         = [0x01, 0x02, 0x20, 0xCC, 0xF0, 0x00]
+CLEAR_CMD           = [0x01, 0x02, 0x00, 0xCC, 0xF0, 0x00]
+STORE_CMD           = [0x01, 0x02, 0x00, 0x33, 0x55, 0xA5]
+CLEAN_FRAME_CMD     = [0x01, 0x22, 0x00, 0x33, 0x33, 0x0F, 0x00, 0xF1, 0x26, 0xBD, 0x13, 0x14, 0x58, 0x00, 0x00, 0x94, 0x94, 0x40, 0x21, 0xD0, 0x80, 0x02, 0x4E, 0x23, 0xD0, 0x8E, 0x45, 0x60, 0x1A, 0x00, 0x03, 0x02, 0x02, 0x0E, 0x20, 0x00, 0x30, 0x01, 0x83]
 
-RESET_ERROR_CMD     = [0x01, 0x02, 0x00, 0x33, 0xDA, 0x04]
-
-RESET_MESSAGE_REQUESTS = [
-    [0x01, 0x03, 0x00, 0x33, 0xD9, 0x96, 0xA5],
-    [0x01, 0x02, 0x00, 0xCC, 0xF0, 0x00],
-    [0x01, 0x22, 0x00, 0x33, 0x33, 0x0F, 0x00, 0xF1, 0x26, 0xBD, 0x13, 0x14, 0x58, 0x00, 0x00, 0x94, 0x94, 0x40, 0x21, 0xD0, 0x80, 0x02, 0x4E, 0x23, 0xD0, 0x8E, 0x45, 0x60, 0x1A, 0x00, 0x03, 0x02, 0x02, 0x0E, 0x20, 0x00, 0x30, 0x01, 0x83],
-    [0x01, 0x02, 0x00, 0x33, 0x55, 0xA5]
-]
 
 # Commands specific to the F0513 version
 F0513_VCELL_1_CMD   = [0x01, 0x01, 0x02, 0xCC, 0x31]
@@ -34,6 +31,21 @@ F0513_MODEL_CMD     = [0x01, 0x00, 0x02, 0x31]
 F0513_VERSION_CMD   = [0x01, 0x00, 0x02, 0x32]
 F0513_TESTMODE_CMD  = [0x01, 0x01, 0x00, 0xCC, 0x99]
 
+initial_data = {
+    "Model": "",
+    "Pack Voltage": "",
+    "Cell 1 Voltage": "",
+    "Cell 2 Voltage": "",
+    "Cell 3 Voltage": "",
+    "Cell 4 Voltage": "",
+    "Cell 5 Voltage": "",
+    "Cell Voltage Difference": "",
+    "Temperature Sensor 1": "",
+    "Temperature Sensor 2": "",
+    "ROM ID": "",
+    "Battery message": "",
+}
+
 class ModuleApplication(tk.Frame):
     def __init__(self, parent, interface_module=None, obi_instance=None):
         super().__init__(parent)
@@ -41,7 +53,8 @@ class ModuleApplication(tk.Frame):
         self.interface = None
         self.interface_module = interface_module
         self.obi_instance = obi_instance
-        self.command_version = None  # Track the command version
+        self.command_version = None
+        self.battery_present = False
         self.create_widgets()
 
     def set_interface(self, interface_instance):
@@ -94,33 +107,45 @@ class ModuleApplication(tk.Frame):
         button5.config(width=20)
         self.buttons.append(button5)
 
-        button6 = tk.Button(column_frame, text="Clear battery message", command=self.on_reset_message_click, state=tk.DISABLED)
+        button6 = tk.Button(column_frame, text="Reset battery message", command=self.on_reset_message_click, state=tk.DISABLED)
         button6.pack(pady=10)
         button6.config(width=20)
         self.buttons.append(button6)
 
-        self.tree = ttk.Treeview(self, columns=("Value"))
+        tree_frame = tk.Frame(self)
+        tree_frame.pack(pady=20, padx=20, fill='both', expand=True)
+
+        tree_scroll_y = tk.Scrollbar(tree_frame, orient="vertical")
+        tree_scroll_y.pack(side="right", fill="y")
+
+        self.tree = ttk.Treeview(
+            tree_frame, 
+            columns=("Value"), 
+            yscrollcommand=tree_scroll_y.set,
+        )
+        
+        tree_scroll_y.config(command=self.tree.yview)
+
         self.tree.heading("#0", text="Parameter")
         self.tree.heading("Value", text="Value")
-        self.tree.pack(pady=20, padx=20, fill='both', expand=True)
+
         self.tree.tag_configure('evenrow', background='lightgrey')
         self.tree.tag_configure('oddrow', background='white')
-        self.enable_all_buttons()
+
+        self.tree.pack(pady=1, padx=1, fill='both', expand=True)
+
+        button_frame = tk.Frame(self)
+        button_frame.pack(pady=1, padx=1, anchor='center')
+
+        copy_button = tk.Button(button_frame, text="Copy", command=self.copy_to_clipboard)
+        copy_button.pack(side="left", padx=5)
+
+        clear_button = tk.Button(button_frame, text="Clear", command=self.clear_data)
+        clear_button.pack(side="left", padx=5)
+
+        button_frame.pack(expand=True)
 
         self.pack(fill='both', expand=True)
-
-        initial_data = {
-            "Model": "",
-            "Pack Voltage": "",
-            "Cell 1 Voltage": "",
-            "Cell 2 Voltage": "",
-            "Cell 3 Voltage": "",
-            "Cell 4 Voltage": "",
-            "Cell 5 Voltage": "",
-            "Cell Voltage Difference": "",
-            "Temperature Sensor 1": "",
-            "Temperature Sensor 2": ""
-        }
 
         self.insert_battery_data(initial_data)
 
@@ -130,35 +155,48 @@ class ModuleApplication(tk.Frame):
             button.config(state=tk.NORMAL)
     
     def get_model(self):
-        print("trying default")
         try:
             response = self.interface.request(MODEL_CMD)
             model = response[2:9].decode('utf-8')
+            self.enable_all_buttons()
+            self.command_version = ""
             return model
         except Exception as e:
             raise e
 
     def get_f0513_model(self):
-        print("trying f0513")
         try:
-            self.interface.request(F0513_TESTMODE_CMD)
+            # This is currently handled in the interface as there were timing issues. TODO
+            #self.interface.request(F0513_TESTMODE_CMD)
             response = self.interface.request(F0513_MODEL_CMD)
+            self.interface.request(CLEAR_CMD)
             self.command_version = "F0513"
+            messagebox.showwarning("Limited", "This model only supports diagnostics")
+            self.buttons[1].config(state=tk.NORMAL)
             return (f"BL{response[2]:X}{response[3]:X}")
         except Exception as e:
             raise e
 
 
     def on_read_static_click(self):
-        """Read static data and determine command version by handling exceptions."""
-
         commands = [self.get_model, self.get_f0513_model]
 
         if not self.interface:
             tk.messagebox.showerror("Error", "No interface specified.")
             return
-
-        last_exception = None  # Variable to store the last exception encountered
+        try:
+            response = self.interface.request(ROMID_CHARGER_CMD)
+            self.interface.request(CLEAR_CMD)
+            rom_id = ' '.join(f'{byte:02X}' for byte in response[2:10])
+            raw_msg = ' '.join(f'{byte:02X}' for byte in response[10:42])
+            data = {"ROM ID": rom_id,
+                    "Battery message": raw_msg,
+            }
+            self.insert_battery_data(data)
+            self.battery_present = True
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"{e}")
+            return
 
         for command in commands:
 
@@ -167,22 +205,22 @@ class ModuleApplication(tk.Frame):
 
                 data = {"Model": model}
                 self.insert_battery_data(data)
-                self.enable_all_buttons()
                 return
 
             except Exception as e:
                 last_exception = e
 
-        tk.messagebox.showerror("Error", f"{last_exception}")
+        tk.messagebox.showerror("Error", "Battery is present but not supported.")
 
     def on_read_data_click(self):
-        """Read dynamic battery data based on command version."""
         if not self.interface:
             tk.messagebox.showerror("Error", "No interface specified.")
             return
 
         try:
             if self.command_version == 'F0513':
+                self.interface.request(CLEAR_CMD)
+                self.interface.request(CLEAR_CMD)
                 cell1 = self.interface.request(F0513_VCELL_1_CMD)  # Example F0513 specific command
                 cell2 = self.interface.request(F0513_VCELL_2_CMD)  # Example F0513 specific command
                 cell3 = self.interface.request(F0513_VCELL_3_CMD)  # Example F0513 specific command
@@ -196,7 +234,7 @@ class ModuleApplication(tk.Frame):
                 v_cell5 = int.from_bytes(cell5[2:4], byteorder='little') / 1000
                 voltages = [v_cell1,v_cell2,v_cell3,v_cell4,v_cell5]
                 v_pack = sum(voltages)
-                v_diff = max(voltages) - min(voltages)
+                v_diff = round(max(voltages) - min(voltages), 2)
                 t_cell = int.from_bytes(temp[2:4], byteorder='little') / 100
                 t_mosfet = ""
             else:
@@ -274,8 +312,10 @@ class ModuleApplication(tk.Frame):
             return
 
         try:
-            for request in RESET_MESSAGE_REQUESTS:
-                self.interface.request(request)
+            self.interface.request(TESTMODE_CMD)
+            self.interface.request(CHARGER_CMD)
+            self.interface.request(CLEAN_FRAME_CMD)
+            self.interface.request(STORE_CMD)
 
         except Exception as e:
             tk.messagebox.showerror("Error", f"Failed to reset message: {e}")
@@ -295,3 +335,22 @@ class ModuleApplication(tk.Frame):
                     self.tree.insert("", "end", text=parameter, values=(value,), tags=('evenrow',))
                 else:
                     self.tree.insert("", "end", text=parameter, values=(value,), tags=('oddrow',))
+
+    def copy_to_clipboard(self):
+        selected_items = self.tree.selection()
+        if not selected_items:
+            messagebox.showwarning("No Selection", "No rows selected to copy!")
+            return
+
+        rows = []
+        for item in selected_items:
+            values = self.tree.item(item, 'values')
+            row_text = '\t'.join(values)
+            rows.append(row_text)
+
+        self.parent.clipboard_clear()
+        self.parent.clipboard_append('\n'.join(rows))
+        messagebox.showinfo("Copied", "Selected rows have been copied to the clipboard.")
+
+    def clear_data(self):
+        self.insert_battery_data(initial_data)
