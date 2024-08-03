@@ -33,6 +33,7 @@ F0513_TESTMODE_CMD  = [0x01, 0x01, 0x00, 0xCC, 0x99]
 
 initial_data = {
     "Model": "",
+    "Charge count*": "",
     "Pack Voltage": "",
     "Cell 1 Voltage": "",
     "Cell 2 Voltage": "",
@@ -176,7 +177,11 @@ class ModuleApplication(tk.Frame):
             return (f"BL{response[2]:X}{response[3]:X}")
         except Exception as e:
             raise e
-
+    def nibble_swap(self, byte):
+        upper_nibble = (byte & 0xF0) >> 4  # Extract the upper nibble and shift right by 4 bits
+        lower_nibble = (byte & 0x0F) << 4  # Extract the lower nibble and shift left by 4 bits
+        swapped_byte = upper_nibble | lower_nibble  # Combine the nibbles
+        return swapped_byte
 
     def on_read_static_click(self):
         commands = [self.get_model, self.get_f0513_model]
@@ -189,8 +194,11 @@ class ModuleApplication(tk.Frame):
             self.interface.request(CLEAR_CMD)
             rom_id = ' '.join(f'{byte:02X}' for byte in response[2:10])
             raw_msg = ' '.join(f'{byte:02X}' for byte in response[10:42])
+            swapped_bytes = bytearray([self.nibble_swap(response[39]), self.nibble_swap(response[38])])[::-1]
+            charge_count = int.from_bytes(swapped_bytes, byteorder='big')
             data = {"ROM ID": rom_id,
                     "Battery message": raw_msg,
+                    "Charge count*": charge_count,
             }
             self.insert_battery_data(data)
             self.battery_present = True
