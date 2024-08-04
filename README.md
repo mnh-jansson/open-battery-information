@@ -13,6 +13,10 @@ This is the problem we would like to solve!
 
 Because of critical custom timings needed for the OneWire interface, we decided to make a simple Arduino Interface to handle this function. The source code can be find in this repository.
 
+## Contact information
+
+For any questions, please e-mail: openbatteryinformation@gmail.com
+
 ## Support
 
 I have spent alot of time on this project and now releasing all this information to the public in hope that it will help other people save batteries and money. If you would like to show some appreciation for my work, please consider supporting me by buying me a coffee or sponsor me on Github!
