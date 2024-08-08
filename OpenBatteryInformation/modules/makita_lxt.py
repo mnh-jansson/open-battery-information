@@ -15,6 +15,7 @@ LEDS_OFF_CMD        = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x34]
 RESET_ERROR_CMD     = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x04]
 ROMID_CHARGER_CMD   = [0x01, 0x02, 0x28, 0x33, 0xF0, 0x00]
 CHARGER_CMD         = [0x01, 0x02, 0x20, 0xCC, 0xF0, 0x00]
+READ_MSG_CMD        = [0x01, 0x02, 0x28, 0x33, 0xAA, 0x00]
 CLEAR_CMD           = [0x01, 0x02, 0x00, 0xCC, 0xF0, 0x00]
 STORE_CMD           = [0x01, 0x02, 0x00, 0x33, 0x55, 0xA5]
 CLEAN_FRAME_CMD     = [0x01, 0x22, 0x00, 0x33, 0x33, 0x0F, 0x00, 0xF1, 0x26, 0xBD, 0x13, 0x14, 0x58, 0x00, 0x00, 0x94, 0x94, 0x40, 0x21, 0xD0, 0x80, 0x02, 0x4E, 0x23, 0xD0, 0x8E, 0x45, 0x60, 0x1A, 0x00, 0x03, 0x02, 0x02, 0x0E, 0x20, 0x00, 0x30, 0x01, 0x83]
@@ -34,6 +35,8 @@ F0513_TESTMODE_CMD  = [0x01, 0x01, 0x00, 0xCC, 0x99]
 initial_data = {
     "Model": "",
     "Charge count*": "",
+    "State": "",
+    "Status code": "",
     "Pack Voltage": "",
     "Cell 1 Voltage": "",
     "Cell 2 Voltage": "",
@@ -190,15 +193,22 @@ class ModuleApplication(tk.Frame):
             tk.messagebox.showerror("Error", "No interface specified.")
             return
         try:
-            response = self.interface.request(ROMID_CHARGER_CMD)
-            self.interface.request(CLEAR_CMD)
+            response = self.interface.request(READ_MSG_CMD)
             rom_id = ' '.join(f'{byte:02X}' for byte in response[2:10])
             raw_msg = ' '.join(f'{byte:02X}' for byte in response[10:42])
             swapped_bytes = bytearray([self.nibble_swap(response[39]), self.nibble_swap(response[38])])[::-1]
             charge_count = int.from_bytes(swapped_bytes, byteorder='big')
+            lock_nibble = response[30] & 0x0F
+            error_byte = response[29]
+            if lock_nibble > 0:
+                lock_status = "LOCKED"
+            else:
+                lock_status = "UNLOCKED"
             data = {"ROM ID": rom_id,
                     "Battery message": raw_msg,
                     "Charge count*": charge_count,
+                    "State": lock_status,
+                    "Status code": f'{error_byte:02X}',
             }
             self.insert_battery_data(data)
             self.battery_present = True
