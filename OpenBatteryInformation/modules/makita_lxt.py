@@ -196,8 +196,9 @@ class ModuleApplication(tk.Frame):
             response = self.interface.request(READ_MSG_CMD)
             rom_id = ' '.join(f'{byte:02X}' for byte in response[2:10])
             raw_msg = ' '.join(f'{byte:02X}' for byte in response[10:42])
-            swapped_bytes = bytearray([self.nibble_swap(response[39]), self.nibble_swap(response[38])])[::-1]
+            swapped_bytes = bytearray([self.nibble_swap(response[37]), self.nibble_swap(response[36])])[::-1]
             charge_count = int.from_bytes(swapped_bytes, byteorder='big')
+            charge_count = charge_count & 0x0FFF
             lock_nibble = response[30] & 0x0F
             error_byte = response[29]
             if lock_nibble > 0:
