@@ -20,7 +20,7 @@ jobs:
       with:
         path: OpenBatteryInformation
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: OBI.exe
         path: OpenBatteryInformation/dist/windows
