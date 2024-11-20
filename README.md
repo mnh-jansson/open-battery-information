@@ -9,10 +9,6 @@ This is the problem we would like to solve!
 
 ![screenshot](docs/images/obi-1.png)
 
-## ArduinoOBI
-
-Because of critical custom timings needed for the OneWire interface, we decided to make a simple Arduino Interface to handle this function. The source code can be find in this repository.
-
 ## Contact information
 
 For any questions, please e-mail: openbatteryinformation@gmail.com
@@ -22,3 +18,52 @@ For any questions, please e-mail: openbatteryinformation@gmail.com
 I have spent alot of time on this project and now releasing all this information to the public in hope that it will help other people save batteries and money. If you would like to show some appreciation for my work, please consider supporting me by buying me a coffee or sponsor me on Github!
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mnhjansson)
+---
+
+# Instructions
+
+## Step 1: Set Up ArduinoOBI
+
+  1. Navigate to the ArduinoOBI folder in the project directory.
+  2. Follow the instructions in the README.md. This section will guide you through configuring the Arduino part of the system, ensuring everything is set up correctly.
+
+## Step 2: Install Python Requirements (Option 1 - Using Pip)
+
+After setting up the Arduino part, you have two options for setting up the software on your computer.
+Option 1: Clone the Repository and Install Dependencies
+
+  Clone the repository to your local machine:
+```bash
+git clone https://github.com/yourusername/OpenBatteryInformation.git
+```
+Navigate into the project folder:
+```bash
+cd OpenBatteryInformation
+```
+Install the required Python dependencies:
+
+If you don't have pip installed, follow the installation guide for your platform here.
+Install the required libraries by running:
+```bash
+pip install -r requirements.txt
+```
+You should now be ready to run OpenBatteryInformation!
+
+
+### Option 2: Use Precompiled Binary for Windows
+
+If you prefer not to deal with Python dependencies, you can download a precompiled binary for Windows:
+
+  1. Navigate to the Releases section of the repository.
+  2. Download the Windows precompiled binary for your system.
+  3. Simply run the executable and follow any on-screen instructions to use the software.
+
+## Step 3: Run OpenBatteryInformation
+
+  If you installed the Python version, you can run the program by executing:
+```bash
+python main.py
+```
+If you're using the Windows binary, simply double-click the downloaded OBI.exe file to start the application.
+
+---
