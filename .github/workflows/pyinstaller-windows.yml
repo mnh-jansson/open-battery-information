@@ -19,8 +19,15 @@ jobs:
       uses: JackMcKew/pyinstaller-action-windows@main
       with:
         path: OpenBatteryInformation
-
-    - uses: actions/upload-artifact@v3
+        
+    - name: Upload Application
+      uses: actions/upload-artifact@v3
       with:
         name: OBI.exe
         path: OpenBatteryInformation/dist/windows
+
+    - name: Upload Compiled File to Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: OBI.exe
