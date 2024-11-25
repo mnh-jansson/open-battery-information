@@ -27,10 +27,19 @@ I have spent alot of time on this project and now releasing all this information
   1. Navigate to the ArduinoOBI folder in the project directory.
   2. Follow the instructions in the README.md. This section will guide you through configuring the Arduino part of the system, ensuring everything is set up correctly.
 
-## Step 2: Install Python Requirements (Option 1 - Using Pip)
+## Step 2: Set Up OpenBatteryInformation
 
 After setting up the Arduino part, you have two options for setting up the software on your computer.
-Option 1: Clone the Repository and Install Dependencies
+
+### Option 1: Use Precompiled Binary for Windows
+
+If you prefer not to deal with Python dependencies, you can download a precompiled binary for Windows:
+
+  1. Navigate to the Releases section of the repository.
+  2. Download the Windows precompiled binary for your system.
+  3. Simply run the executable and follow any on-screen instructions to use the software.
+
+### Option 2: Install Python Requirements - Clone the Repository and Install Dependencies
 
   Clone the repository to your local machine:
 ```bash
@@ -49,14 +58,6 @@ pip install -r requirements.txt
 ```
 You should now be ready to run OpenBatteryInformation!
 
-
-### Option 2: Use Precompiled Binary for Windows
-
-If you prefer not to deal with Python dependencies, you can download a precompiled binary for Windows:
-
-  1. Navigate to the Releases section of the repository.
-  2. Download the Windows precompiled binary for your system.
-  3. Simply run the executable and follow any on-screen instructions to use the software.
 
 ## Step 3: Run OpenBatteryInformation
 
