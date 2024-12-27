@@ -35,7 +35,7 @@ After setting up the Arduino part, you have two options for setting up the softw
 
 If you prefer not to deal with Python dependencies, you can download a precompiled binary for Windows:
 
-  1. Navigate to the Releases section of the repository.
+  1. Navigate to the [Releases](https://github.com/mnh-jansson/open-battery-information/releases) section of the repository.
   2. Download the Windows precompiled binary for your system.
   3. Simply run the executable and follow any on-screen instructions to use the software.
 
