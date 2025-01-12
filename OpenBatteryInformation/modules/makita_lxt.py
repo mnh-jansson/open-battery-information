@@ -124,10 +124,13 @@ class ModuleApplication(tk.Frame):
 
         self.tree = ttk.Treeview(
             tree_frame, 
-            columns=("Value"), 
+            columns=("Value"),
             yscrollcommand=tree_scroll_y.set,
         )
-        
+
+        s = ttk.Style()
+        s.configure('Treeview', rowheight=40)
+                
         tree_scroll_y.config(command=self.tree.yview)
 
         self.tree.heading("#0", text="Parameter")
