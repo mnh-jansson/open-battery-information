@@ -240,12 +240,12 @@ class ModuleApplication(tk.Frame):
             if self.command_version == 'F0513':
                 self.interface.request(CLEAR_CMD)
                 self.interface.request(CLEAR_CMD)
-                cell1 = self.interface.request(F0513_VCELL_1_CMD)  # Example F0513 specific command
-                cell2 = self.interface.request(F0513_VCELL_2_CMD)  # Example F0513 specific command
-                cell3 = self.interface.request(F0513_VCELL_3_CMD)  # Example F0513 specific command
-                cell4 = self.interface.request(F0513_VCELL_4_CMD)  # Example F0513 specific command
-                cell5 = self.interface.request(F0513_VCELL_5_CMD)  # Example F0513 specific command
-                temp = self.interface.request(F0513_TEMP_CMD)  # Example F0513 specific command
+                cell1 = self.interface.request(F0513_VCELL_1_CMD)
+                cell2 = self.interface.request(F0513_VCELL_2_CMD)
+                cell3 = self.interface.request(F0513_VCELL_3_CMD)
+                cell4 = self.interface.request(F0513_VCELL_4_CMD)
+                cell5 = self.interface.request(F0513_VCELL_5_CMD)
+                temp = self.interface.request(F0513_TEMP_CMD)
                 v_cell1 = int.from_bytes(cell1[2:4], byteorder='little') / 1000
                 v_cell2 = int.from_bytes(cell2[2:4], byteorder='little') / 1000
                 v_cell3 = int.from_bytes(cell3[2:4], byteorder='little') / 1000
@@ -331,6 +331,13 @@ class ModuleApplication(tk.Frame):
             return
 
         try:
+            # TODO: Replace clean frame with the frame from the battery.
+            # 1. Read frame
+            # 2. set nibble 0
+            # 3. write as usual 
+            tk.messagebox.showerror("Error", "This feature is currently under development.")
+            return
+        
             self.interface.request(TESTMODE_CMD)
             self.interface.request(CHARGER_CMD)
             self.interface.request(CLEAN_FRAME_CMD)
