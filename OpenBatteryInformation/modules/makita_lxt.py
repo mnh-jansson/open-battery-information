@@ -133,8 +133,8 @@ class ModuleApplication(tk.Frame):
         self.tree.heading("#0", text="Parameter")
         self.tree.heading("Value", text="Value")
 
-        self.tree.tag_configure('evenrow', background='lightgrey')
-        self.tree.tag_configure('oddrow', background='white')
+        self.tree.tag_configure('evenrow', background='lightgrey', foreground="black")
+        self.tree.tag_configure('oddrow', background='white', foreground="black")
 
         self.tree.pack(pady=1, padx=1, fill='both', expand=True)
 
