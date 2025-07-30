@@ -45,6 +45,10 @@
 #elif defined(__arc__) /* Arduino101/Genuino101 specifics */
 #define IO_REG_TYPE uint32_t
 
+#elif defined(__MBED__)
+#include "DigitalInOut.h"
+#define IO_REG_TYPE mbed::DigitalInOut*
+
 #elif defined(__riscv)
 #define IO_REG_TYPE uint32_t
 

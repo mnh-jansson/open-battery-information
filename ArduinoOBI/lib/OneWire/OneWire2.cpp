@@ -32,6 +32,11 @@ private email about OneWire).
 OneWire is now very mature code.  No changes other than adding
 definitions for newer hardware support are anticipated.
 
+  ESP32 mods authored by stickbreaker:
+  @stickbreaker 30APR2018 add IRAM_ATTR to read_bit() write_bit() to solve ICache miss timing failure.
+      thanks @everslick re:  https://github.com/espressif/arduino-esp32/issues/1335
+  Altered by garyd9 for clean merge with Paul Stoffregen's source
+
 Version 2.3:
   Unknown chip fallback mode, Roger Clark
   Teensy-LC compatibility, Paul Stoffregen
@@ -143,6 +148,16 @@ sample code bearing this copyright.
 #include "OneWire2.h"
 #include "util/OneWire_direct_gpio.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+// due to the dual core esp32, a critical section works better than disabling interrupts
+#  define noInterrupts() {portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;portENTER_CRITICAL(&mux)
+#  define interrupts() portEXIT_CRITICAL(&mux);}
+// for info on this, search "IRAM_ATTR" at https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/general-notes.html
+#  define CRIT_TIMING IRAM_ATTR
+#else
+#  define CRIT_TIMING
+#endif
+
 
 void OneWire::begin(uint8_t pin)
 {
@@ -161,10 +176,10 @@ void OneWire::begin(uint8_t pin)
 //
 // Returns 1 if a device asserted a presence pulse, 0 otherwise.
 //
-uint8_t OneWire::reset(void)
+uint8_t CRIT_TIMING OneWire::reset(void)
 {
 	IO_REG_TYPE mask IO_REG_MASK_ATTR = bitmask;
-	volatile IO_REG_TYPE *reg IO_REG_BASE_ATTR = baseReg;
+	__attribute__((unused)) volatile IO_REG_TYPE *reg IO_REG_BASE_ATTR = baseReg;
 	uint8_t r;
 	uint8_t retries = 125;
 
@@ -181,6 +196,7 @@ uint8_t OneWire::reset(void)
 	DIRECT_WRITE_LOW(reg, mask);
 	DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
 	interrupts();
+	// OBI modification, was 480
 	delayMicroseconds(750);
 	noInterrupts();
 	DIRECT_MODE_INPUT(reg, mask);	// allow it to float
@@ -195,26 +211,30 @@ uint8_t OneWire::reset(void)
 // Write a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-void OneWire::write_bit(uint8_t v)
+void CRIT_TIMING OneWire::write_bit(uint8_t v)
 {
 	IO_REG_TYPE mask IO_REG_MASK_ATTR = bitmask;
-	volatile IO_REG_TYPE *reg IO_REG_BASE_ATTR = baseReg;
+	__attribute__((unused)) volatile IO_REG_TYPE *reg IO_REG_BASE_ATTR = baseReg;
 
 	if (v & 1) {
 		noInterrupts();
 		DIRECT_WRITE_LOW(reg, mask);
 		DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
+		// OBI modification, was 10
 		delayMicroseconds(12);
 		DIRECT_WRITE_HIGH(reg, mask);	// drive output high
 		interrupts();
+		// OBI modification, was 55
 		delayMicroseconds(120);
 	} else {
 		noInterrupts();
 		DIRECT_WRITE_LOW(reg, mask);
 		DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
+		// OBI modification, was 65
 		delayMicroseconds(100);
 		DIRECT_WRITE_HIGH(reg, mask);	// drive output high
 		interrupts();
+		// OBI modification, was 5
 		delayMicroseconds(30);
 	}
 }
@@ -223,15 +243,16 @@ void OneWire::write_bit(uint8_t v)
 // Read a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-uint8_t OneWire::read_bit(void)
+uint8_t CRIT_TIMING OneWire::read_bit(void)
 {
 	IO_REG_TYPE mask IO_REG_MASK_ATTR = bitmask;
-	volatile IO_REG_TYPE *reg IO_REG_BASE_ATTR = baseReg;
+	__attribute__((unused)) volatile IO_REG_TYPE *reg IO_REG_BASE_ATTR = baseReg;
 	uint8_t r;
 
 	noInterrupts();
 	DIRECT_MODE_OUTPUT(reg, mask);
 	DIRECT_WRITE_LOW(reg, mask);
+	// OBI modification, was 3
 	delayMicroseconds(10);
 	DIRECT_MODE_INPUT(reg, mask);	// let pin float, pull up will raise
 	delayMicroseconds(10);
@@ -385,6 +406,7 @@ bool OneWire::search(uint8_t *newAddr, bool search_mode /* = true */)
    // if the last call was not the last one
    if (!LastDeviceFlag) {
       // 1-Wire reset
+      // OBI modification, no reset
       /*
       if (!reset()) {
          // reset the search
@@ -579,3 +601,11 @@ uint16_t OneWire::crc16(const uint8_t* input, uint16_t len, uint16_t crc)
 #endif
 
 #endif
+
+// undef defines for no particular reason
+#ifdef ARDUINO_ARCH_ESP32
+#  undef noInterrupts() {portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;portENTER_CRITICAL(&mux)
+#  undef interrupts() portEXIT_CRITICAL(&mux);}
+#endif
+// for info on this, search "IRAM_ATTR" at https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/general-notes.html
+#undef CRIT_TIMING
