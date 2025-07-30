@@ -47,7 +47,10 @@ initial_data = {
     "Temperature Sensor 1": "",
     "Temperature Sensor 2": "",
     "ROM ID": "",
+    "Manufacturing date": "",
     "Battery message": "",
+    "Capacity": "",
+    "Battery type": "",
 }
 
 class ModuleApplication(tk.Frame):
@@ -210,6 +213,9 @@ class ModuleApplication(tk.Frame):
                     "Charge count*": charge_count,
                     "State": lock_status,
                     "Status code": f'{error_byte:02X}',
+                    "Manufacturing date": f'{response[4]:02}/{response[3]:02}/20{response[2]:02}',
+                    "Capacity": f'{self.nibble_swap(response[26])/10}Ah',
+                    "Battery type": self.nibble_swap(response[21]),
             }
             self.insert_battery_data(data)
             self.battery_present = True
