@@ -52,7 +52,7 @@
         "type": "git",
         "url": "https://github.com/PaulStoffregen/OneWire"
     },
-    "version": "2.3.6",
+    "version": "2.3.8",
     "homepage": "https://www.pjrc.com/teensy/td_libs_OneWire.html",
     "frameworks": "Arduino",
     "examples": [
