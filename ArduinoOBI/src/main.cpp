@@ -74,7 +74,7 @@ void setup() {
 }
 
 void send_usb(byte *rsp, byte rsp_len) {
-    for (int i; i < rsp_len; i++) {
+    for (int i=0; i < rsp_len; i++) {
         Serial.write(rsp[i]);
     }
 }
