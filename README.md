@@ -43,7 +43,7 @@ If you prefer not to deal with Python dependencies, you can download a precompil
 
   Clone the repository to your local machine:
 ```bash
-git clone https://github.com/yourusername/OpenBatteryInformation.git
+git clone https://github.com/mnh-jansson/open-battery-information
 ```
 Navigate into the project folder:
 ```bash
@@ -68,3 +68,4 @@ python main.py
 If you're using the Windows binary, simply double-click the downloaded OBI.exe file to start the application.
 
 ---
+
