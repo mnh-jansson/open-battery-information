@@ -30,7 +30,7 @@ Power it with any USB-C power bank or charger, insert a Makita battery, and read
 
 ## Circuit Schematic & BOM
 
-![OBI-1 Circuit Schematic & BOM](OBI1_schematic_bom.png)
+![OBI-1 Circuit Schematic & BOM](OBIstandaloneSchematics.png)
 
 ### Bill of Materials
 
