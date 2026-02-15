@@ -6,6 +6,10 @@ Standalone version of the [Open Battery Information](https://github.com/mnh-jans
 
 Power it with any USB-C power bank or charger, insert a Makita battery, and read diagnostics or reset errors on the spot.
 
+## Demo
+
+[![Video Demo](https://img.shields.io/badge/YouTube-Demo-red?style=for-the-badge&logo=youtube)](https://youtube.com/shorts/XOClaFdqzUA)
+
 ## Features
 
 | Menu Item     | Function                                          |
@@ -110,9 +114,7 @@ Tested with Makita LXT 18V batteries with OneWire interface:
 
 BL1815 · BL1820 · BL1830 · BL1840 · BL1850 · BL1860 · BL18xx series
 
-## Demo
 
-[![Video Demo](https://img.shields.io/badge/YouTube-Demo-red?style=for-the-badge&logo=youtube)](https://youtube.com/shorts/XOClaFdqzUA)
 
 ## License
 
