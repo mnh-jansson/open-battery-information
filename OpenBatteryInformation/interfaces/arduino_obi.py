@@ -74,6 +74,11 @@ class _SerialWorker(QObject):
 # ──────────────────────────────────────────────────────────────────────────────
 
 class Interface(QWidget):
+    # Emitted once the firmware version has been read after connect.
+    # Modules can connect to this to enable their controls.
+    ready = Signal()
+    disconnected = Signal()
+
     def __init__(self, parent, obi_instance):
         super().__init__(parent)
         self.obi_instance = obi_instance
@@ -198,6 +203,7 @@ class Interface(QWidget):
         self.port_combo.setEnabled(True)
         self.version_label.setText("Firmware: —")
         self.obi_instance.update_debug("[INFO] Serial port closed.")
+        self.disconnected.emit()
 
     # ── async version read ────────────────────────────────────────────────────
 
@@ -210,12 +216,14 @@ class Interface(QWidget):
                 version = '.'.join(str(b) for b in response[2:])
                 self.version_label.setText(f"Firmware: {version}")
             self._set_controls_enabled(True)
+            self.ready.emit()
 
         def on_error(msg):
             self.version_label.setText("Firmware: error")
             self.obi_instance.update_debug(
                 f"[WARN] Version read failed: {msg}")
             self._set_controls_enabled(True)
+            self.ready.emit()  # unblock module even if version read fails
 
         self._run_async(INTERFACE_VERSION_CMD, max_attempts=5,
                         on_finished=on_done, on_error=on_error)
