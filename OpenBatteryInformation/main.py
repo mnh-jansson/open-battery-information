@@ -1,186 +1,317 @@
 import os
 import sys
-import tkinter as tk
-from tkinter import ttk
-import importlib.util
-import pkgutil
-from components.default_module import DefaultModule
+import importlib
 
-class OBI(tk.Tk):
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout,
+    QSplitter, QGroupBox, QComboBox, QTextEdit, QFrame,
+    QStatusBar, QLabel
+)
+from PySide6.QtGui import QIcon, QFont
+from PySide6.QtCore import Qt, QDateTime
+
+from components.default_module import DefaultModule
+from theme import STYLESHEET
+
+APP_NAME = "OBI-1"
+APP_VERSION = "1.0.0"
+
+
+class OBI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.title("OBI-1")
-        self.geometry("1270x720")
-        self.set_icon("icon.png")
+        self.setWindowTitle(f"{APP_NAME}  ·  v{APP_VERSION}")
+        self.resize(1270, 720)
+        self.setMinimumSize(900, 540)
+        self._set_icon("icon.png")
 
         self.main_app = None
-        self.loaded_modules = {}
-        self.loaded_interfaces = {}
-        self.module_names = {}
-        self.interface_names = {} 
-
-        self.setup_sidebar()
-        self.setup_main_window()
-        self.setup_debug_frame()
-
-        self.default_module = DefaultModule(self.main_window)
-        self.display_default_content()
-
         self.current_interface = None
+        self._module_cache:    dict = {}
+        self._interface_cache: dict = {}
+        self._module_names:    dict = {}   # display_name -> internal_name
+        self._interface_names: dict = {}
 
-    def set_icon(self, icon_path):
-        if hasattr(sys, '_MEIPASS'):
-            # When running from a PyInstaller bundle
-            icon_path = os.path.join(sys._MEIPASS, icon_path)
+        self._build_ui()
+        self._build_status_bar()
 
-        icon = tk.PhotoImage(file=icon_path)
-        self.iconphoto(False, icon)
+        self._load_plugins("modules",    self._module_names,
+                           self.module_combo,    "— select module —")
+        self._load_plugins("interfaces", self._interface_names,
+                           self.interface_combo, "— select interface —")
+        self._show_default()
 
-    def setup_sidebar(self):
-        self.sidebar = tk.LabelFrame(self, text="Settings", width=200, padx=10, pady=10)
-        self.sidebar.pack(fill='y', side='left')
+        # Pre-select defaults if available
+        self._preselect(self.module_combo,    self._module_names,
+                        "Makita LXT",   self._on_module_selected)
+        self._preselect(self.interface_combo, self._interface_names,
+                        "Arduino OBI",  self._on_interface_selected)
 
-        self.setup_module_frame()
-        self.setup_interface_frame()
+    # ──────────────────────────────────────────── UI construction
 
-    def setup_module_frame(self):
-        module_frame = tk.LabelFrame(self.sidebar, text="Module Selection", padx=10, pady=10)
-        module_frame.pack(fill='both', pady=10)
+    def _build_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
 
-        self.module_var = tk.StringVar()
-        self.module_combobox = ttk.Combobox(module_frame, textvariable=self.module_var, width=20)
-        self.module_combobox.pack(fill='both', pady=10)
+        root = QVBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
-        self.load_modules()
-        self.module_combobox.bind("<<ComboboxSelected>>", self.display_module)
+        # Horizontal splitter: sidebar | main content
+        h_splitter = QSplitter(Qt.Horizontal)
+        h_splitter.setChildrenCollapsible(False)
 
-    def setup_interface_frame(self):
-        interface_frame = tk.LabelFrame(self.sidebar, text="Select Interface:", padx=10, pady=10)
-        interface_frame.pack(pady=10)
+        h_splitter.addWidget(self._build_sidebar())
 
-        self.interface_var = tk.StringVar()
-        self.interface_combobox = ttk.Combobox(interface_frame, textvariable=self.interface_var, width=25)
-        self.interface_combobox.pack(pady=10)
+        self.main_window = QWidget()
+        self.main_layout = QVBoxLayout(self.main_window)
+        self.main_layout.setContentsMargins(12, 12, 12, 12)
+        h_splitter.addWidget(self.main_window)
+        h_splitter.setSizes([220, 1050])
 
-        self.load_interfaces()
-        self.interface_combobox.bind("<<ComboboxSelected>>", self.display_interface_settings)
+        # Vertical splitter: top (sidebar+main) | debug log
+        v_splitter = QSplitter(Qt.Vertical)
+        v_splitter.setChildrenCollapsible(False)
+        v_splitter.addWidget(h_splitter)
+        v_splitter.addWidget(self._build_debug_frame())
+        v_splitter.setSizes([580, 130])
+        v_splitter.setHandleWidth(4)
 
-        self.interface_wireframe = tk.Frame(interface_frame, padx=10, pady=10)
-        self.interface_wireframe.pack(fill='both', expand=True, pady=(20, 0))
+        root.addWidget(v_splitter)
 
-    def setup_main_window(self):
-        self.main_window = tk.Frame(self, padx=20, pady=20)
-        self.main_window.pack(fill='both', expand=True, side='top')
+    def _build_sidebar(self):
+        sidebar = QWidget()
+        sidebar.setFixedWidth(220)
+        sidebar.setObjectName("sidebar")
+        sidebar.setStyleSheet(
+            "#sidebar { background-color: #181B22; border-right: 1px solid #2E3340; }")
 
-    def setup_debug_frame(self):
-        debug_frame = tk.LabelFrame(self, text="Debug Information", padx=20, pady=20)
-        debug_frame.pack(fill='both', expand=False, side='top', padx=5, pady=5)
+        layout = QVBoxLayout(sidebar)
+        layout.setContentsMargins(10, 14, 10, 14)
+        layout.setSpacing(12)
+        layout.setAlignment(Qt.AlignTop)
 
-        self.debug_text = tk.Text(debug_frame, height=5, wrap='word')
-        self.debug_text.pack(fill='both', expand=True)
-        self.debug_text.config(state='disabled')
+        # App title in sidebar
+        title_lbl = QLabel(APP_NAME)
+        title_lbl.setStyleSheet(
+            "font-size: 15pt; font-weight: 700; color: #00B4CC; letter-spacing: 2px;"
+        )
+        title_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_lbl)
 
-    def get_resource_path(self, relative_path):
-        """ Get the absolute path to the resource, works for dev and for PyInstaller """
-        if hasattr(sys, '_MEIPASS'):
-            return os.path.join(sys._MEIPASS, relative_path)
-        return os.path.join(os.path.abspath("."), relative_path)
+        ver_lbl = QLabel(f"v{APP_VERSION}")
+        ver_lbl.setStyleSheet(
+            "font-size: 8pt; color: #3E4555; letter-spacing: 1px;")
+        ver_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(ver_lbl)
 
-    def load_modules(self):
-        modules_dir = self.get_resource_path('modules')
-        module_names = sorted({name for _, name, _ in pkgutil.iter_modules([modules_dir])})
+        layout.addSpacing(8)
 
-        display_names = []
-        for module_name in module_names:
+        # Module selection
+        mod_group = QGroupBox("Module")
+        mod_layout = QVBoxLayout(mod_group)
+        mod_layout.setContentsMargins(8, 14, 8, 8)
+        self.module_combo = QComboBox()
+        # activated fires only on user interaction, not programmatic changes
+        self.module_combo.activated.connect(self._on_module_selected)
+        mod_layout.addWidget(self.module_combo)
+        layout.addWidget(mod_group)
+
+        # Interface selection
+        iface_group = QGroupBox("Interface")
+        iface_layout = QVBoxLayout(iface_group)
+        iface_layout.setContentsMargins(8, 14, 8, 8)
+        self.interface_combo = QComboBox()
+        self.interface_combo.activated.connect(self._on_interface_selected)
+        iface_layout.addWidget(self.interface_combo)
+
+        self.interface_wireframe = QFrame()
+        self.interface_wireframe_layout = QVBoxLayout(self.interface_wireframe)
+        self.interface_wireframe_layout.setContentsMargins(0, 6, 0, 0)
+        self.interface_wireframe_layout.setSpacing(4)
+        iface_layout.addWidget(self.interface_wireframe)
+
+        layout.addWidget(iface_group)
+        layout.addStretch()
+        return sidebar
+
+    def _build_debug_frame(self):
+        group = QGroupBox("Debug Log")
+        layout = QVBoxLayout(group)
+        layout.setContentsMargins(8, 14, 8, 8)
+        self.debug_text = QTextEdit()
+        self.debug_text.setReadOnly(True)
+        layout.addWidget(self.debug_text)
+        return group
+
+    def _build_status_bar(self):
+        bar = QStatusBar()
+        bar.setStyleSheet(
+            "QStatusBar { background: #181B22; border-top: 1px solid #2E3340; "
+            "color: #3E4555; font-size: 8pt; padding: 2px 8px; }"
+        )
+        self._status_lbl = QLabel("Ready")
+        bar.addPermanentWidget(self._status_lbl)
+        self.setStatusBar(bar)
+
+    # ──────────────────────────────────────────── icon / resources
+
+    def _set_icon(self, icon_path):
+        full_path = self._resource(icon_path)
+        if os.path.exists(full_path):
+            self.setWindowIcon(QIcon(full_path))
+
+    def _resource(self, relative_path: str) -> str:
+        base = getattr(sys, '_MEIPASS', os.path.abspath("."))
+        return os.path.join(base, relative_path)
+
+    # ──────────────────────────────────────────── plugin loader (generic)
+
+    def _load_plugins(self, subdir: str, names_dict: dict,
+                      combo: QComboBox, placeholder: str):
+        """Discover plugins in *subdir*, fill *names_dict* and *combo*.
+        Works both in normal Python and in a PyInstaller frozen bundle.
+        """
+        directory = self._resource(subdir)
+
+        if not os.path.isdir(directory):
+            self.update_debug(
+                f"[WARN] Plugin directory not found: {directory}")
+            combo.addItems([placeholder])
+            return
+
+        # Collect module names from .py files (dev) or compiled .pyc files (frozen)
+        names = set()
+        for entry in os.listdir(directory):
+            if entry.startswith("_"):
+                continue
+            if entry.endswith(".py"):
+                names.add(entry[:-3])
+            elif entry.endswith(".pyc"):
+                names.add(entry[:-4])
+
+        for name in sorted(names):
             try:
-                module = self.import_module(f"modules.{module_name}")
-                display_name = module.get_display_name()
-                self.module_names[display_name] = module_name
-                display_names.append(display_name)
+                mod = importlib.import_module(f"{subdir}.{name}")
+                display = mod.get_display_name()
+                names_dict[display] = name
             except Exception as e:
-                self.update_debug(f"Failed to load module '{module_name}': {e}")
+                self.update_debug(
+                    f"[WARN] Failed to load {subdir}/{name}: {e}")
 
-        self.module_combobox['values'] = display_names
+        combo.addItems([placeholder] + list(names_dict))
 
-    def load_interfaces(self):
-        interfaces_dir = self.get_resource_path('interfaces')
-        interface_names = sorted({name for _, name, _ in pkgutil.iter_modules([interfaces_dir])})
+    def _preselect(self, combo: QComboBox, names_dict: dict, display_name: str, slot):
+        """Select *display_name* in *combo* and trigger *slot* if it exists."""
+        if display_name in names_dict:
+            combo.setCurrentText(display_name)
+            slot(combo.currentIndex())
 
-        display_names = []
-        for interface_name in interface_names:
-            try:
-                interface = self.import_module(f"interfaces.{interface_name}")
-                display_name = interface.get_display_name()
-                self.interface_names[display_name] = interface_name
-                display_names.append(display_name)
-            except Exception as e:
-                self.update_debug(f"Failed to load interface '{interface_name}': {e}")
+    # ──────────────────────────────────────────── display helpers
 
-        self.interface_combobox['values'] = display_names
+    def _show_default(self):
+        self._clear_main()
+        self.main_layout.addWidget(DefaultModule())
 
-    def display_default_content(self):
-        self.clear_main_window()
-        self.default_module.pack(fill='both', expand=True)
+    def _clear_main(self):
+        while self.main_layout.count():
+            item = self.main_layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
 
-    def display_module(self, event=None):
-        display_name = self.module_var.get()
-        selected_module = self.module_names.get(display_name, None)
+    def _clear_interface_wireframe(self):
+        while self.interface_wireframe_layout.count():
+            item = self.interface_wireframe_layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
 
-        if selected_module:
-            module_to_display = self.load_cached_module(selected_module)
-            self.clear_main_window()
-            self.main_app = module_to_display.ModuleApplication(self.main_window, None, self)
+    # ──────────────────────────────────────────── slots
+
+    def _on_module_selected(self, index: int):
+        display = self.module_combo.currentText()
+        internal = self._module_names.get(display)
+        if not internal:
+            return
+
+        mod = self._get_cached(internal, "modules", self._module_cache)
+        if mod is None:
+            return
+
+        self._clear_main()
+        try:
+            self.main_app = mod.ModuleApplication(self.main_window, None, self)
+        except Exception as e:
+            self.update_debug(
+                f"[ERROR] Init failed for module '{internal}': {e}")
+            self.main_app = None
+            return
+
+        self.main_app.set_interface(self.current_interface)
+        self.main_layout.addWidget(self.main_app)
+        self._set_status(f"Module loaded: {display}")
+
+    def _on_interface_selected(self, index: int):
+        display = self.interface_combo.currentText()
+        internal = self._interface_names.get(display)
+        if not internal:
+            return
+
+        iface_mod = self._get_cached(
+            internal, "interfaces", self._interface_cache)
+        if iface_mod is None:
+            return
+
+        self._clear_interface_wireframe()
+        self.current_interface = iface_mod.Interface(
+            self.interface_wireframe, self)
+        self.interface_wireframe_layout.addWidget(self.current_interface)
+
+        if self.main_app is not None:
             self.main_app.set_interface(self.current_interface)
 
-    def display_interface_settings(self, event=None):
-        display_name = self.interface_var.get()
-        selected_interface = self.interface_names.get(display_name, None)
+        self._set_status(f"Interface: {display}")
 
-        if selected_interface:
-            interface_module = self.load_cached_interface(selected_interface)
-            if self.current_interface:
-                self.current_interface.pack_forget()
-            self.current_interface = interface_module.Interface(self.interface_wireframe, self)
-            self.current_interface.pack(fill='both', expand=True)
-            if self.main_app:
-                self.main_app.set_interface(self.current_interface)
+    # ──────────────────────────────────────────── generic cache
 
-    def load_cached_module(self, module_name):
-        if module_name not in self.loaded_modules:
-            module_to_display = self.import_module(f"modules.{module_name}")
-            self.loaded_modules[module_name] = module_to_display
-            self.update_debug(f"Imported module: {module_name}")
+    def _get_cached(self, name: str, subdir: str, cache: dict):
+        """Return cached import, importing on first call. Returns None on failure."""
+        if name not in cache:
+            try:
+                cache[name] = importlib.import_module(f"{subdir}.{name}")
+                self.update_debug(f"[INFO] Imported {subdir}/{name}")
+            except Exception as e:
+                self.update_debug(
+                    f"[ERROR] Import failed for {subdir}/{name}: {e}")
+                return None
         else:
-            module_to_display = self.loaded_modules[module_name]
-            self.update_debug(f"Using cached module: {module_name}")
-        return module_to_display
+            self.update_debug(f"[INFO] Using cached {subdir}/{name}")
+        return cache[name]
 
-    def load_cached_interface(self, interface_name):
-        if interface_name not in self.loaded_interfaces:
-            interface_module = self.import_module(f"interfaces.{interface_name}")
-            self.loaded_interfaces[interface_name] = interface_module
-            self.update_debug(f"Imported interface: {interface_name}")
-        else:
-            interface_module = self.loaded_interfaces[interface_name]
-            self.update_debug(f"Using cached interface: {interface_name}")
-        return interface_module
+    # ──────────────────────────────────────────── close event
 
-    def import_module(self, module_path):
-        return importlib.import_module(module_path)
+    def closeEvent(self, event):
+        """Ensure the serial port is closed cleanly when the window is closed."""
+        if (self.current_interface is not None
+                and hasattr(self.current_interface, 'serial')
+                and self.current_interface.serial.is_open):
+            self.current_interface.serial.close()
+        event.accept()
 
-    def clear_main_window(self):
-        for widget in self.main_window.winfo_children():
-            widget.pack_forget()
+    # ──────────────────────────────────────────── debug / status
 
-    def update_debug(self, message):
-        if hasattr(self, 'debug_text'):  # Check if debug_text is initialized
-            self.debug_text.config(state='normal')
-            self.debug_text.insert('end', message + '\n')
-            self.debug_text.see('end')
-            self.debug_text.config(state='disabled')
-        else:
-            print("Debug:", message)  # Fallback if debug_text isn't initialized
+    def update_debug(self, message: str):
+        timestamp = QDateTime.currentDateTime().toString("hh:mm:ss.zzz")
+        self.debug_text.append(
+            f"<span style='color:#3E6E8C'>[{timestamp}]</span> {message}")
+        self.debug_text.ensureCursorVisible()
+
+    def _set_status(self, message: str):
+        self._status_lbl.setText(message)
+
 
 if __name__ == "__main__":
-    obi = OBI()
-    obi.mainloop()
+    app = QApplication(sys.argv)
+    app.setStyleSheet(STYLESHEET)
+    window = OBI()
+    window.show()
+    sys.exit(app.exec())
