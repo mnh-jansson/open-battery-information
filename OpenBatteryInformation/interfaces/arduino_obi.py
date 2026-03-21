@@ -55,16 +55,21 @@ class Interface(tk.Frame):
 
     def open_serial_port(self):
         selected_port = self.conf_port.get()
-        if selected_port:
-            self.serial.port = selected_port
-            try:
-                self.serial.open()
-                self.update_version()
-                self.obi_instance.update_debug(f"Opened serial port: {selected_port}")
-                self.connect_button.config(text="Disconnect", command=self.close_serial_port)
-            except Exception as e:
-                self.serial.close()
-                self.obi_instance.update_debug(f"Error opening serial port {selected_port}: {e}")
+        if not selected_port:
+            self.obi_instance.update_debug("No serial port selected. Please select a port from the dropdown.")
+            return
+        self.serial.port = selected_port
+        try:
+            self.serial.open()
+            self.update_version()
+            self.obi_instance.update_debug(f"Opened serial port: {selected_port}")
+            self.connect_button.config(text="Disconnect", command=self.close_serial_port)
+        except serial.SerialException as e:
+            self.serial.close()
+            self.obi_instance.update_debug(f"Error opening serial port {selected_port}: {e}. Check the port is not in use by another application.")
+        except Exception as e:
+            self.serial.close()
+            self.obi_instance.update_debug(f"Unexpected error opening serial port {selected_port}: {type(e).__name__}: {e}")
 
     def close_serial_port(self):
         if self.serial.is_open:
@@ -83,27 +88,36 @@ class Interface(tk.Frame):
 
     def request(self, request, max_attempts=2):
         if not self.serial.is_open:
-            raise Exception(f"Serial port is not open.")
+            raise ConnectionError("Serial port is not open. Please connect to the Arduino first.")
 
+        expected_length = request[2] + 2
         for attempt in range(1, max_attempts + 1):
             self.obi_instance.update_debug(f">> {' '.join(f'{x:02X}' for x in request[3:])}")
             try:
                 self.serial.reset_input_buffer()
                 self.serial.write(request)
 
-                response = self.serial.read(request[2] + 2)
+                response = self.serial.read(expected_length)
                 self.obi_instance.update_debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
                 if request[2] == 0:
                     return
 
-                if len(response) == request[2] + 2:
-                    
-                    if all(byte == 0xff for byte in response[2:]):
-                        raise ValueError("Invalid response: all bytes are 0xFF")
-                    
-                    return response
+                if len(response) == 0:
+                    raise TimeoutError(f"No response received from Arduino (expected {expected_length} bytes). Check that a battery is connected.")
 
-            except Exception as e:
+                if len(response) != expected_length:
+                    raise ValueError(f"Incomplete response: received {len(response)} bytes, expected {expected_length}. The battery may not be seated correctly.")
+
+                if all(byte == 0xff for byte in response[2:]):
+                    raise ValueError("Invalid response: all bytes are 0xFF. The battery may not be communicating correctly.")
+
+                return response
+
+            except (TimeoutError, ValueError) as e:
                 self.obi_instance.update_debug(f"Attempt {attempt}/{max_attempts} failed: {e}")
-        raise Exception(f"Failed to get a valid response after {max_attempts} attempts.")
+            except serial.SerialException as e:
+                self.obi_instance.update_debug(f"Attempt {attempt}/{max_attempts} serial error: {e}. The Arduino may have been disconnected.")
+            except Exception as e:
+                self.obi_instance.update_debug(f"Attempt {attempt}/{max_attempts} unexpected error: {type(e).__name__}: {e}")
+        raise ConnectionError(f"Failed to get a valid response after {max_attempts} attempts. Ensure the Arduino is connected and a battery is inserted.")
 
