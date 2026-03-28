@@ -8,8 +8,13 @@
 /** Patch version number (x.x.X) */
 #define ARDUINO_OBI_VERSION_PATCH 1
 
+#ifdef ESP_BUILD
+#define ONEWIRE_PIN ESP_OW_PIN
+#define ENABLE_PIN ESP_EN_PIN
+#else
 #define ONEWIRE_PIN 6
 #define ENABLE_PIN 8
+#endif
 
 
 OneWire makita(ONEWIRE_PIN);

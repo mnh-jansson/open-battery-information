@@ -23,6 +23,8 @@ Ensure you have the following installed on your system:
 4. **Arduino UNO**  
    Ensure you have a working Arduino UNO board and a USB cable to connect it to your computer.
    Build the circuit according to the schematic.
+   It also can be done using an ESP32C3 board (e.g. the SuperMini C3). See the important notes
+   on using ESPs [below](#using-an-esp).
 
 ---
 
@@ -60,3 +62,18 @@ Or,
   Under "General", click Upload.
   PlatformIO will detect the correct port and upload the firmware to your Arduino UNO.
   A successful upload will display an "Upload complete" message in the terminal.
+
+---
+
+## Using an ESP
+
+Tested with an ESP32C3 SuperMini. When building up the circuit, make sure to **connect the pull-up
+resistors to the 3.3V pin** of the ESP board, NOT the 5V. This would fry the GPIOs and destroy the module.
+
+Also, use Pin 0 for the ENABLE pin and Pin 1 for the ONEWIRE. This is geared towards the C3 SuperMini.
+If other GPIOs are more convenient, change the ESP_EN_PIN and ESP_OW_PIN in platformio.ini.
+
+To build the software for the ESP, make sure to select the corresponding
+platformio build env "esp32-c3-devkitm-1", the other steps are the same.
+
+To support other ESP chip types you have to change the board type and esp type in platformio.ini.
