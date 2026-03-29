@@ -193,7 +193,7 @@ class ModuleApplication(tk.Frame):
         commands = [self.get_model, self.get_f0513_model]
 
         if not self.interface:
-            tk.messagebox.showerror("Error", "No interface specified.")
+            tk.messagebox.showerror("Error", "No interface selected. Please select and connect an interface from the sidebar.")
             return
         try:
             response = self.interface.request(READ_MSG_CMD)
@@ -219,8 +219,14 @@ class ModuleApplication(tk.Frame):
             }
             self.insert_battery_data(data)
             self.battery_present = True
+        except ConnectionError as e:
+            tk.messagebox.showerror("Connection Error", f"Could not communicate with the battery:\n\n{e}")
+            return
+        except (IndexError, ValueError) as e:
+            tk.messagebox.showerror("Data Error", f"Received an unexpected response while reading battery info:\n\n{type(e).__name__}: {e}")
+            return
         except Exception as e:
-            tk.messagebox.showerror("Error", f"{e}")
+            tk.messagebox.showerror("Error", f"Failed to read battery static data:\n\n{type(e).__name__}: {e}")
             return
 
         for command in commands:
@@ -235,11 +241,11 @@ class ModuleApplication(tk.Frame):
             except Exception as e:
                 last_exception = e
 
-        tk.messagebox.showerror("Error", "Battery is present but not supported.")
+        tk.messagebox.showerror("Unsupported Battery", f"Battery is present but the model is not supported.\n\nLast error: {last_exception}")
 
     def on_read_data_click(self):
         if not self.interface:
-            tk.messagebox.showerror("Error", "No interface specified.")
+            tk.messagebox.showerror("Error", "No interface selected. Please select and connect an interface from the sidebar.")
             return
 
         try:
@@ -289,24 +295,30 @@ class ModuleApplication(tk.Frame):
 
             self.insert_battery_data(battery_data)
 
+        except ConnectionError as e:
+            tk.messagebox.showerror("Connection Error", f"Lost communication while reading battery data:\n\n{e}")
+        except (IndexError, ValueError) as e:
+            tk.messagebox.showerror("Data Error", f"Received an unexpected response while reading battery data:\n\n{type(e).__name__}: {e}")
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Failed to read battery data: {e}")
+            tk.messagebox.showerror("Error", f"Failed to read battery data:\n\n{type(e).__name__}: {e}")
 
     def on_all_leds_on_click(self):
         if not self.interface:
-            tk.messagebox.showerror("Error", "No interface specified.")
+            tk.messagebox.showerror("Error", "No interface selected. Please select and connect an interface from the sidebar.")
             return
 
         try:
             self.interface.request(TESTMODE_CMD)
             self.interface.request(LEDS_ON_CMD)
 
+        except ConnectionError as e:
+            tk.messagebox.showerror("Connection Error", f"Lost communication while turning LEDs on:\n\n{e}")
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Failed to turn LEDs on: {e}")
+            tk.messagebox.showerror("Error", f"Failed to turn LEDs on:\n\n{type(e).__name__}: {e}")
 
     def on_all_leds_off_click(self):
         if not self.interface:
-            tk.messagebox.showerror("Error", "No interface specified.")
+            tk.messagebox.showerror("Error", "No interface selected. Please select and connect an interface from the sidebar.")
             return
 
         try:
@@ -317,41 +329,47 @@ class ModuleApplication(tk.Frame):
 
             self.interface.request(LEDS_OFF_CMD)
 
+        except ConnectionError as e:
+            tk.messagebox.showerror("Connection Error", f"Lost communication while turning LEDs off:\n\n{e}")
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Failed to turn LEDs off: {e}")
+            tk.messagebox.showerror("Error", f"Failed to turn LEDs off:\n\n{type(e).__name__}: {e}")
 
     def on_reset_errors_click(self):
         if not self.interface:
-            tk.messagebox.showerror("Error", "No interface specified.")
+            tk.messagebox.showerror("Error", "No interface selected. Please select and connect an interface from the sidebar.")
             return
 
         try:
             self.interface.request(TESTMODE_CMD)
             self.interface.request(RESET_ERROR_CMD)
 
+        except ConnectionError as e:
+            tk.messagebox.showerror("Connection Error", f"Lost communication while resetting errors:\n\n{e}")
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Failed to reset errors: {e}")
+            tk.messagebox.showerror("Error", f"Failed to reset errors:\n\n{type(e).__name__}: {e}")
 
     def on_reset_message_click(self):
         if not self.interface:
-            tk.messagebox.showerror("Error", "No interface specified.")
+            tk.messagebox.showerror("Error", "No interface selected. Please select and connect an interface from the sidebar.")
             return
 
         try:
             # TODO: Replace clean frame with the frame from the battery.
             # 1. Read frame
             # 2. set nibble 0
-            # 3. write as usual 
-            tk.messagebox.showerror("Error", "This feature is currently under development.")
+            # 3. write as usual
+            tk.messagebox.showwarning("Not Implemented", "This feature is currently under development.")
             return
-        
+
             self.interface.request(TESTMODE_CMD)
             self.interface.request(CHARGER_CMD)
             self.interface.request(CLEAN_FRAME_CMD)
             self.interface.request(STORE_CMD)
 
+        except ConnectionError as e:
+            tk.messagebox.showerror("Connection Error", f"Lost communication while resetting battery message:\n\n{e}")
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Failed to reset message: {e}")
+            tk.messagebox.showerror("Error", f"Failed to reset battery message:\n\n{type(e).__name__}: {e}")
 
     def insert_battery_data(self, data):
         for idx, (parameter, value) in enumerate(data.items()):

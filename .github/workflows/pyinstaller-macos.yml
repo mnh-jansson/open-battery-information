@@ -1,0 +1,65 @@
+name: Package Application for macOS (Apple Silicon)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r OpenBatteryInformation/requirements.txt
+
+    - name: Convert icon to icns
+      run: |
+        cd OpenBatteryInformation
+        mkdir -p icon.iconset
+        sips -z 16 16     icon.png --out icon.iconset/icon_16x16.png
+        sips -z 32 32     icon.png --out icon.iconset/icon_16x16@2x.png
+        sips -z 32 32     icon.png --out icon.iconset/icon_32x32.png
+        sips -z 64 64     icon.png --out icon.iconset/icon_32x32@2x.png
+        sips -z 128 128   icon.png --out icon.iconset/icon_128x128.png
+        sips -z 256 256   icon.png --out icon.iconset/icon_128x128@2x.png
+        sips -z 256 256   icon.png --out icon.iconset/icon_256x256.png
+        sips -z 512 512   icon.png --out icon.iconset/icon_256x256@2x.png
+        sips -z 512 512   icon.png --out icon.iconset/icon_512x512.png
+        sips -z 1024 1024 icon.png --out icon.iconset/icon_512x512@2x.png
+        iconutil -c icns icon.iconset
+        rm -rf icon.iconset
+
+    - name: Build with PyInstaller
+      run: |
+        cd OpenBatteryInformation
+        python -m PyInstaller obi-macos.spec
+
+    - name: Create DMG
+      run: |
+        cd OpenBatteryInformation/dist
+        hdiutil create -volname "OpenBatteryInformation" -srcfolder OpenBatteryInformation.app -ov -format UDZO OpenBatteryInformation.dmg
+
+    - name: Upload Application
+      uses: actions/upload-artifact@v4
+      with:
+        name: OpenBatteryInformation.dmg
+        path: OpenBatteryInformation/dist/OpenBatteryInformation.dmg
+
+    - name: Upload Compiled File to Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: OpenBatteryInformation/dist/OpenBatteryInformation.dmg
