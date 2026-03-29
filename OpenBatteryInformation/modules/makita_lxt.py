@@ -411,9 +411,17 @@ class ModuleApplication(QWidget):
         try:
             response = self.interface.request(READ_MSG_CMD)
             self._basic_info_response = response
+        except ConnectionError as e:
+            QMessageBox.critical(self, "Connection Error",
+                                 f"Could not communicate with the battery:\n\n{e}")
+            return
+        except (IndexError, ValueError) as e:
+            QMessageBox.critical(self, "Data Error",
+                                 f"Received an unexpected response while reading battery info:\n\n{type(e).__name__}: {e}")
+            return
         except Exception as e:
             QMessageBox.critical(self, "Read Error",
-                                 f"Failed to read battery info:\n{e}")
+                                 f"Failed to read battery static data:\n\n{type(e).__name__}: {e}")
             return
 
         # Parse static fields from basic_info response
@@ -496,9 +504,15 @@ class ModuleApplication(QWidget):
                 self._read_data_type6()
             else:
                 self._read_data_standard()
+        except ConnectionError as e:
+            QMessageBox.critical(self, "Connection Error",
+                                 f"Lost communication while reading battery data:\n\n{e}")
+        except (IndexError, ValueError) as e:
+            QMessageBox.critical(self, "Data Error",
+                                 f"Received an unexpected response while reading battery data:\n\n{type(e).__name__}: {e}")
         except Exception as e:
             QMessageBox.critical(self, "Read Error",
-                                 f"Failed to read battery data:\n{e}")
+                                 f"Failed to read battery data:\n\n{type(e).__name__}: {e}")
 
     # ── per-type data readers ─────────────────────────────────────────────────
 
@@ -686,8 +700,12 @@ class ModuleApplication(QWidget):
             self.interface.request(TESTMODE_CMD)
             self.interface.request(LEDS_ON_CMD)
             self._log("[LED] LEDs ON")
+        except ConnectionError as e:
+            QMessageBox.critical(self, "Connection Error",
+                                 f"Lost communication while turning LEDs on:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"LED ON failed:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"LED ON failed:\n\n{type(e).__name__}: {e}")
 
     def _on_leds_off(self):
         if not self._require_interface():
@@ -696,8 +714,12 @@ class ModuleApplication(QWidget):
             self.interface.request(TESTMODE_CMD)
             self.interface.request(LEDS_OFF_CMD)
             self._log("[LED] LEDs OFF")
+        except ConnectionError as e:
+            QMessageBox.critical(self, "Connection Error",
+                                 f"Lost communication while turning LEDs off:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"LED OFF failed:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"LED OFF failed:\n\n{type(e).__name__}: {e}")
 
     def _on_reset_errors(self):
         if not self._require_interface():
@@ -707,8 +729,12 @@ class ModuleApplication(QWidget):
             self.interface.request(RESET_ERROR_CMD)
             self._log("[RESET] Error flags cleared")
             QMessageBox.information(self, "Done", "Error flags cleared.")
+        except ConnectionError as e:
+            QMessageBox.critical(self, "Connection Error",
+                                 f"Lost communication while resetting errors:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Clear errors failed:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"Clear errors failed:\n\n{type(e).__name__}: {e}")
 
     def _on_reset_message(self):
         """
@@ -742,8 +768,12 @@ class ModuleApplication(QWidget):
                 "Battery message reset.\n\n"
                 "Disconnect the battery for 10 seconds before reconnecting.",
             )
+        except ConnectionError as e:
+            QMessageBox.critical(self, "Connection Error",
+                                 f"Lost communication while resetting battery message:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Reset message failed:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"Reset message failed:\n\n{type(e).__name__}: {e}")
 
     # ── tree ──────────────────────────────────────────────────────────────────
 
