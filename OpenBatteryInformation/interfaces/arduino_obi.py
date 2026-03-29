@@ -39,8 +39,10 @@ class _SerialWorker(QObject):
 
     def _execute(self):
         if not self._serial.is_open:
-            raise Exception("Serial port is not open.")
+            raise ConnectionError(
+                "Serial port is not open. Please connect to the Arduino first.")
 
+        expected_length = self._request[2] + 2
         for attempt in range(1, self._max_attempts + 1):
             # Bytes [0..2] are protocol framing header; [3:] is the logical payload.
             self._debug(
@@ -49,24 +51,38 @@ class _SerialWorker(QObject):
                 self._serial.reset_input_buffer()
                 self._serial.write(bytearray(self._request))
 
-                response = self._serial.read(self._request[2] + 2)
+                response = self._serial.read(expected_length)
                 self._debug(f"<< {' '.join(f'{x:02X}' for x in response[2:])}")
 
                 if self._request[2] == 0:   # fire-and-forget command
                     return None
 
-                if len(response) == self._request[2] + 2:
-                    if all(b == 0xFF for b in response[2:]):
-                        raise ValueError(
-                            "Invalid response: all bytes are 0xFF")
-                    return response
+                if len(response) == 0:
+                    raise TimeoutError(
+                        f"No response received from Arduino (expected {expected_length} bytes). Check that a battery is connected.")
 
-            except Exception as e:
+                if len(response) != expected_length:
+                    raise ValueError(
+                        f"Incomplete response: received {len(response)} bytes, expected {expected_length}. The battery may not be seated correctly.")
+
+                if all(b == 0xFF for b in response[2:]):
+                    raise ValueError(
+                        "Invalid response: all bytes are 0xFF. The battery may not be communicating correctly.")
+
+                return response
+
+            except (TimeoutError, ValueError) as e:
                 self._debug(
                     f"Attempt {attempt}/{self._max_attempts} failed: {e}")
+            except serial.SerialException as e:
+                self._debug(
+                    f"Attempt {attempt}/{self._max_attempts} serial error: {e}. The Arduino may have been disconnected.")
+            except Exception as e:
+                self._debug(
+                    f"Attempt {attempt}/{self._max_attempts} unexpected error: {type(e).__name__}: {e}")
 
-        raise Exception(
-            f"No valid response after {self._max_attempts} attempts.")
+        raise ConnectionError(
+            f"Failed to get a valid response after {self._max_attempts} attempts. Ensure the Arduino is connected and a battery is inserted.")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -106,7 +122,7 @@ class Interface(QWidget):
         # Connect / Refresh buttons
         self.connect_btn = QPushButton("Connect")
         self.connect_btn.setProperty("accent", True)
-        self.connect_btn.setStyle(self.connect_btn.style())   # re-polish
+        self.connect_btn.setStyle(self.connect_btn.style())
         self.connect_btn.clicked.connect(self._toggle_connection)
         layout.addWidget(self.connect_btn)
 
@@ -270,8 +286,10 @@ class Interface(QWidget):
         For non-blocking module calls, expose request_async() in a future iteration.
         """
         if not self.serial.is_open:
-            raise Exception("Serial port is not open.")
+            raise ConnectionError(
+                "Serial port is not open. Please connect to the Arduino first.")
 
+        expected_length = request[2] + 2
         for attempt in range(1, max_attempts + 1):
             self.obi_instance.update_debug(
                 f">> {' '.join(f'{x:02X}' for x in request[3:])}"
@@ -280,7 +298,7 @@ class Interface(QWidget):
                 self.serial.reset_input_buffer()
                 self.serial.write(bytearray(request))
 
-                response = self.serial.read(request[2] + 2)
+                response = self.serial.read(expected_length)
                 self.obi_instance.update_debug(
                     f"<< {' '.join(f'{x:02X}' for x in response[2:])}"
                 )
@@ -288,15 +306,32 @@ class Interface(QWidget):
                 if request[2] == 0:
                     return None
 
-                if len(response) == request[2] + 2:
-                    if all(b == 0xFF for b in response[2:]):
-                        raise ValueError(
-                            "Invalid response: all bytes are 0xFF")
-                    return response
+                if len(response) == 0:
+                    raise TimeoutError(
+                        f"No response received from Arduino (expected {expected_length} bytes). Check that a battery is connected.")
 
-            except Exception as e:
+                if len(response) != expected_length:
+                    raise ValueError(
+                        f"Incomplete response: received {len(response)} bytes, expected {expected_length}. The battery may not be seated correctly.")
+
+                if all(b == 0xFF for b in response[2:]):
+                    raise ValueError(
+                        "Invalid response: all bytes are 0xFF. The battery may not be communicating correctly.")
+
+                return response
+
+            except (TimeoutError, ValueError) as e:
                 self.obi_instance.update_debug(
                     f"Attempt {attempt}/{max_attempts} failed: {e}"
                 )
+            except serial.SerialException as e:
+                self.obi_instance.update_debug(
+                    f"Attempt {attempt}/{max_attempts} serial error: {e}. The Arduino may have been disconnected."
+                )
+            except Exception as e:
+                self.obi_instance.update_debug(
+                    f"Attempt {attempt}/{max_attempts} unexpected error: {type(e).__name__}: {e}"
+                )
 
-        raise Exception(f"No valid response after {max_attempts} attempts.")
+        raise ConnectionError(
+            f"Failed to get a valid response after {max_attempts} attempts. Ensure the Arduino is connected and a battery is inserted.")
