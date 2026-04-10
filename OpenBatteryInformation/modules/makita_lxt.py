@@ -147,6 +147,30 @@ INITIAL_DATA: dict[str, str] = {
 ROW_EVEN = QColor("#1C1F26")
 ROW_ODD = QColor("#20242C")
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Known BMS boards  (from mnh-jansson/open-battery-information wiki)
+# ──────────────────────────────────────────────────────────────────────────────
+# Maps board family → (MCU, supported, safe_to_charge, note)
+KNOWN_BOARDS = {
+    "MC908JK3E": (
+        "Freescale HC08 (LIP5002 / LIPW001)", False, False,
+        "No cell monitoring or protection circuit implemented. "
+        "DO NOT attempt to charge — unsafe."),
+    "uPD78F0513": (
+        "NEC/Renesas F0513", True, True,
+        "Type 5 — protected. Read support is experimental "
+        "(based on rosvall protocol docs, not yet validated end-to-end)."),
+    "MAK01": (
+        "MAK01 (BL1815N / BL1820)", True, True, "Supported upstream."),
+    "MAK02": (
+        "MAK02 (LIPW014 / LIPW015)", True, True, "Supported upstream."),
+    "RAJ240080DFP": (
+        "Renesas RL78 (BL1840B / BL1850B / BL1850B-D)", True, True,
+        "Supported upstream."),
+    "STM32L051": (
+        "ST STM32L051C8 (LIPW017)", True, True, "Supported upstream."),
+}
+
 HEALTH_LABELS = {4: "Excellent", 3: "Good", 2: "Fair", 1: "Poor", 0: "Bad"}
 SOC_LABELS = {7: "Full", 6: "High", 5: "Good", 4: "Medium",
                  3: "Low", 2: "Very Low", 1: "Critical", 0: "Empty"}
@@ -424,20 +448,25 @@ class ModuleApplication(QWidget):
         # an all-0xFF payload — the data registers simply don't exist on
         # that chip.  Detect this before attempting to parse or type-probe.
         if all(b == 0xFF for b in response[2:]):
+            mcu, _, _, note = KNOWN_BOARDS["MC908JK3E"]
             self._log("[DETECT] Basic info response is all 0xFF "
-                      "— unsupported pre-type-0 BMS")
+                      f"— matches {mcu}")
             self._insert_battery_data({
-                "Battery Type": "Unsupported (pre-type-0 BMS — no data registers)",
+                "Battery Type": f"Unsupported — {mcu}",
                 "Battery message": " ".join(f"{b:02X}" for b in response[2:]),
                 "ROM ID":          " ".join(f"{b:02X}" for b in response[2:10]),
             })
-            QMessageBox.warning(
-                self, "Unsupported BMS",
-                "This battery's BMS predates the supported protocol.\n\n"
-                "The basic info response is all 0xFF, which typically means "
-                "the BMS has no addressable data registers (e.g. early "
-                "BL1830 non-B with TH-only BMS).\n\n"
-                "OBI cannot read or diagnose this battery type.",
+            QMessageBox.critical(
+                self, "⚠ Unsafe BMS — Do Not Charge",
+                f"This battery uses a {mcu} board.\n\n"
+                f"{note}\n\n"
+                "These boards have no overdischarge, overcurrent, or "
+                "per-cell protection. The cells will work in a tool but "
+                "MUST NOT be charged on any charger — including older "
+                "DC18RA models. Charging unprotected lithium cells is a "
+                "serious fire/explosion risk.\n\n"
+                "Recommendation: retire the pack or swap the BMS board "
+                "for a newer protected one (MAK01/MAK02/RL78/STM32).",
             )
             return
 
