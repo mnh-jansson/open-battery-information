@@ -2,6 +2,7 @@
 makita_lxt.py  —  Makita LXT 18V battery diagnostics module for OBI-1.
 
 Supports battery types: 0 (standard/newest), 2, 3, 5 (F0513), 6 (10-cell BL36xx).
+Detects and reports unsupported pre-type-0 BMS hardware (all-0xFF basic info).
 
 Command frame format used by ArduinoOBI interface:
   Byte 0: 0x01  (framing start)
@@ -195,7 +196,8 @@ class ModuleApplication(QWidget):
         title.setAlignment(Qt.AlignCenter)
 
         subtitle = QLabel(
-            "Li-ion Battery Diagnostics  ·  Types 0 / 2 / 3 / 5 / 6")
+            "Li-ion Battery Diagnostics  ·  Types 0 / 2 / 3 / 5 / 6"
+            "  ·  Pre-type-0 detection")
         subtitle.setStyleSheet(
             "font-size: 9pt; color: #3E4555; letter-spacing: 1px;")
         subtitle.setAlignment(Qt.AlignCenter)
@@ -411,17 +413,32 @@ class ModuleApplication(QWidget):
         try:
             response = self.interface.request(READ_MSG_CMD)
             self._basic_info_response = response
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Connection Error",
-                                 f"Could not communicate with the battery:\n\n{e}")
-            return
-        except (IndexError, ValueError) as e:
-            QMessageBox.critical(self, "Data Error",
-                                 f"Received an unexpected response while reading battery info:\n\n{type(e).__name__}: {e}")
-            return
         except Exception as e:
             QMessageBox.critical(self, "Read Error",
-                                 f"Failed to read battery static data:\n\n{type(e).__name__}: {e}")
+                                 f"Failed to read battery info:\n{e}")
+            return
+
+        # ── Early bail-out for pre-type-0 BMS hardware ────────────────────
+        # Very old batteries (e.g. BL1830 non-B, ~2008, TH-only BMS) may
+        # assert 1-Wire presence and return the correct byte count, but with
+        # an all-0xFF payload — the data registers simply don't exist on
+        # that chip.  Detect this before attempting to parse or type-probe.
+        if all(b == 0xFF for b in response[2:]):
+            self._log("[DETECT] Basic info response is all 0xFF "
+                      "— unsupported pre-type-0 BMS")
+            self._insert_battery_data({
+                "Battery Type": "Unsupported (pre-type-0 BMS — no data registers)",
+                "Battery message": " ".join(f"{b:02X}" for b in response[2:]),
+                "ROM ID":          " ".join(f"{b:02X}" for b in response[2:10]),
+            })
+            QMessageBox.warning(
+                self, "Unsupported BMS",
+                "This battery's BMS predates the supported protocol.\n\n"
+                "The basic info response is all 0xFF, which typically means "
+                "the BMS has no addressable data registers (e.g. early "
+                "BL1830 non-B with TH-only BMS).\n\n"
+                "OBI cannot read or diagnose this battery type.",
+            )
             return
 
         # Parse static fields from basic_info response
@@ -504,15 +521,9 @@ class ModuleApplication(QWidget):
                 self._read_data_type6()
             else:
                 self._read_data_standard()
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Connection Error",
-                                 f"Lost communication while reading battery data:\n\n{e}")
-        except (IndexError, ValueError) as e:
-            QMessageBox.critical(self, "Data Error",
-                                 f"Received an unexpected response while reading battery data:\n\n{type(e).__name__}: {e}")
         except Exception as e:
             QMessageBox.critical(self, "Read Error",
-                                 f"Failed to read battery data:\n\n{type(e).__name__}: {e}")
+                                 f"Failed to read battery data:\n{e}")
 
     # ── per-type data readers ─────────────────────────────────────────────────
 
@@ -700,12 +711,8 @@ class ModuleApplication(QWidget):
             self.interface.request(TESTMODE_CMD)
             self.interface.request(LEDS_ON_CMD)
             self._log("[LED] LEDs ON")
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Connection Error",
-                                 f"Lost communication while turning LEDs on:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"LED ON failed:\n\n{type(e).__name__}: {e}")
+            QMessageBox.critical(self, "Error", f"LED ON failed:\n{e}")
 
     def _on_leds_off(self):
         if not self._require_interface():
@@ -714,12 +721,8 @@ class ModuleApplication(QWidget):
             self.interface.request(TESTMODE_CMD)
             self.interface.request(LEDS_OFF_CMD)
             self._log("[LED] LEDs OFF")
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Connection Error",
-                                 f"Lost communication while turning LEDs off:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"LED OFF failed:\n\n{type(e).__name__}: {e}")
+            QMessageBox.critical(self, "Error", f"LED OFF failed:\n{e}")
 
     def _on_reset_errors(self):
         if not self._require_interface():
@@ -729,12 +732,8 @@ class ModuleApplication(QWidget):
             self.interface.request(RESET_ERROR_CMD)
             self._log("[RESET] Error flags cleared")
             QMessageBox.information(self, "Done", "Error flags cleared.")
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Connection Error",
-                                 f"Lost communication while resetting errors:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"Clear errors failed:\n\n{type(e).__name__}: {e}")
+            QMessageBox.critical(self, "Error", f"Clear errors failed:\n{e}")
 
     def _on_reset_message(self):
         """
@@ -768,12 +767,8 @@ class ModuleApplication(QWidget):
                 "Battery message reset.\n\n"
                 "Disconnect the battery for 10 seconds before reconnecting.",
             )
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Connection Error",
-                                 f"Lost communication while resetting battery message:\n\n{e}")
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"Reset message failed:\n\n{type(e).__name__}: {e}")
+            QMessageBox.critical(self, "Error", f"Reset message failed:\n{e}")
 
     # ── tree ──────────────────────────────────────────────────────────────────
 
