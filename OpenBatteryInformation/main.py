@@ -42,10 +42,10 @@ class OBI(QMainWindow):
         self._show_default()
 
         # Pre-select defaults if available
-        self._preselect(self.module_combo,    self._module_names,
-                        "Makita LXT",   self._on_module_selected)
-        self._preselect(self.interface_combo, self._interface_names,
-                        "Arduino OBI",  self._on_interface_selected)
+        #self._preselect(self.module_combo,    self._module_names,
+                        #"Makita LXT",   self._on_module_selected)
+        #self._preselect(self.interface_combo, self._interface_names,
+                        #"Arduino OBI",  self._on_interface_selected)
 
     # ──────────────────────────────────────────── UI construction
 
@@ -266,10 +266,25 @@ class OBI(QMainWindow):
             self.interface_wireframe, self)
         self.interface_wireframe_layout.addWidget(self.current_interface)
 
+        if self.current_interface and hasattr(self.current_interface, 'connected'):
+            self.current_interface.connected.connect(
+                self._on_interface_connected)
+        if self.current_interface and hasattr(self.current_interface, 'disconnected'):
+            self.current_interface.disconnected.connect(
+                self._on_interface_disconnected_dropdowns)
+
         if self.main_app is not None:
             self.main_app.set_interface(self.current_interface)
 
         self._set_status(f"Interface: {display}")
+
+    def _on_interface_connected(self):
+        self.module_combo.setEnabled(False)
+        self.interface_combo.setEnabled(False)
+
+    def _on_interface_disconnected_dropdowns(self):
+        self.module_combo.setEnabled(True)
+        self.interface_combo.setEnabled(True)
 
     # ──────────────────────────────────────────── generic cache
 
