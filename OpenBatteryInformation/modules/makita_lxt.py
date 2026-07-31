@@ -1,36 +1,42 @@
 from tkinter import ttk
 from tkinter import messagebox
 import tkinter as tk
-import time
+
 
 def get_display_name():
     return "Makita LXT"
 
+
 # Command Definitions
-MODEL_CMD           = [0x01, 0x02, 0x10, 0xCC, 0xDC, 0x0C]
-READ_DATA_REQUEST   = [0x01, 0x04, 0x1D, 0xCC, 0xD7, 0x00, 0x00, 0xFF]
-TESTMODE_CMD        = [0x01, 0x03, 0x09, 0x33, 0xD9, 0x96, 0xA5]
-LEDS_ON_CMD         = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x31]
-LEDS_OFF_CMD        = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x34]
-RESET_ERROR_CMD     = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x04]
-ROMID_CHARGER_CMD   = [0x01, 0x02, 0x28, 0x33, 0xF0, 0x00]
-CHARGER_CMD         = [0x01, 0x02, 0x20, 0xCC, 0xF0, 0x00]
-READ_MSG_CMD        = [0x01, 0x02, 0x28, 0x33, 0xAA, 0x00]
-CLEAR_CMD           = [0x01, 0x02, 0x00, 0xCC, 0xF0, 0x00]
-STORE_CMD           = [0x01, 0x02, 0x00, 0x33, 0x55, 0xA5]
-CLEAN_FRAME_CMD     = [0x01, 0x22, 0x00, 0x33, 0x33, 0x0F, 0x00, 0xF1, 0x26, 0xBD, 0x13, 0x14, 0x58, 0x00, 0x00, 0x94, 0x94, 0x40, 0x21, 0xD0, 0x80, 0x02, 0x4E, 0x23, 0xD0, 0x8E, 0x45, 0x60, 0x1A, 0x00, 0x03, 0x02, 0x02, 0x0E, 0x20, 0x00, 0x30, 0x01, 0x83]
+MODEL_CMD = [0x01, 0x02, 0x10, 0xCC, 0xDC, 0x0C]
+READ_DATA_REQUEST = [0x01, 0x04, 0x1D, 0xCC, 0xD7, 0x00, 0x00, 0xFF]
+TESTMODE_CMD = [0x01, 0x03, 0x09, 0x33, 0xD9, 0x96, 0xA5]
+LEDS_ON_CMD = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x31]
+LEDS_OFF_CMD = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x34]
+RESET_ERROR_CMD = [0x01, 0x02, 0x09, 0x33, 0xDA, 0x04]
+ROMID_CHARGER_CMD = [0x01, 0x02, 0x28, 0x33, 0xF0, 0x00]
+CHARGER_CMD = [0x01, 0x02, 0x20, 0xCC, 0xF0, 0x00]
+READ_MSG_CMD = [0x01, 0x02, 0x28, 0x33, 0xAA, 0x00]
+CLEAR_CMD = [0x01, 0x02, 0x00, 0xCC, 0xF0, 0x00]
+STORE_CMD = [0x01, 0x02, 0x00, 0x33, 0x55, 0xA5]
+CLEAN_FRAME_CMD = [
+    0x01, 0x22, 0x00, 0x33, 0x33, 0x0F, 0x00, 0xF1, 0x26, 0xBD, 0x13, 0x14,
+    0x58, 0x00, 0x00, 0x94, 0x94, 0x40, 0x21, 0xD0, 0x80, 0x02, 0x4E, 0x23,
+    0xD0, 0x8E, 0x45, 0x60, 0x1A, 0x00, 0x03, 0x02, 0x02, 0x0E, 0x20, 0x00,
+    0x30, 0x01, 0x83
+]
 
 
 # Commands specific to the F0513 version
-F0513_VCELL_1_CMD   = [0x01, 0x01, 0x02, 0xCC, 0x31]
-F0513_VCELL_2_CMD   = [0x01, 0x01, 0x02, 0xCC, 0x32]
-F0513_VCELL_3_CMD   = [0x01, 0x01, 0x02, 0xCC, 0x33]
-F0513_VCELL_4_CMD   = [0x01, 0x01, 0x02, 0xCC, 0x34]
-F0513_VCELL_5_CMD   = [0x01, 0x01, 0x02, 0xCC, 0x35]
-F0513_TEMP_CMD      = [0x01, 0x01, 0x02, 0xCC, 0x52]
-F0513_MODEL_CMD     = [0x01, 0x00, 0x02, 0x31]
-F0513_VERSION_CMD   = [0x01, 0x00, 0x02, 0x32]
-F0513_TESTMODE_CMD  = [0x01, 0x01, 0x00, 0xCC, 0x99]
+F0513_VCELL_1_CMD = [0x01, 0x01, 0x02, 0xCC, 0x31]
+F0513_VCELL_2_CMD = [0x01, 0x01, 0x02, 0xCC, 0x32]
+F0513_VCELL_3_CMD = [0x01, 0x01, 0x02, 0xCC, 0x33]
+F0513_VCELL_4_CMD = [0x01, 0x01, 0x02, 0xCC, 0x34]
+F0513_VCELL_5_CMD = [0x01, 0x01, 0x02, 0xCC, 0x35]
+F0513_TEMP_CMD = [0x01, 0x01, 0x02, 0xCC, 0x52]
+F0513_MODEL_CMD = [0x01, 0x00, 0x02, 0x31]
+F0513_VERSION_CMD = [0x01, 0x00, 0x02, 0x32]
+F0513_TESTMODE_CMD = [0x01, 0x01, 0x00, 0xCC, 0x99]
 
 initial_data = {
     "Model": "",
@@ -52,6 +58,7 @@ initial_data = {
     "Capacity": "",
     "Battery type": "",
 }
+
 
 class ModuleApplication(tk.Frame):
     def __init__(self, parent, interface_module=None, obi_instance=None):
@@ -114,7 +121,10 @@ class ModuleApplication(tk.Frame):
         button5.config(width=20)
         self.buttons.append(button5)
 
-        button6 = tk.Button(column_frame, text="Reset battery message", command=self.on_reset_message_click, state=tk.DISABLED)
+        button6 = tk.Button(
+            column_frame, text="Reset battery message",
+            command=self.on_reset_message_click, state=tk.DISABLED
+        )
         button6.pack(pady=10)
         button6.config(width=20)
         self.buttons.append(button6)
@@ -126,11 +136,11 @@ class ModuleApplication(tk.Frame):
         tree_scroll_y.pack(side="right", fill="y")
 
         self.tree = ttk.Treeview(
-            tree_frame, 
-            columns=("Value"), 
+            tree_frame,
+            columns=("Value"),
             yscrollcommand=tree_scroll_y.set,
         )
-        
+
         tree_scroll_y.config(command=self.tree.yview)
 
         self.tree.heading("#0", text="Parameter")
@@ -160,7 +170,7 @@ class ModuleApplication(tk.Frame):
         """Enable all buttons."""
         for button in self.buttons:
             button.config(state=tk.NORMAL)
-    
+
     def get_model(self):
         try:
             response = self.interface.request(MODEL_CMD)
@@ -174,7 +184,7 @@ class ModuleApplication(tk.Frame):
     def get_f0513_model(self):
         try:
             # This is currently handled in the interface as there were timing issues. TODO
-            #self.interface.request(F0513_TESTMODE_CMD)
+            # self.interface.request(F0513_TESTMODE_CMD)
             response = self.interface.request(F0513_MODEL_CMD)
             self.interface.request(CLEAR_CMD)
             self.command_version = "F0513"
@@ -183,6 +193,7 @@ class ModuleApplication(tk.Frame):
             return (f"BL{response[2]:X}{response[3]:X}")
         except Exception as e:
             raise e
+
     def nibble_swap(self, byte):
         upper_nibble = (byte & 0xF0) >> 4  # Extract the upper nibble and shift right by 4 bits
         lower_nibble = (byte & 0x0F) << 4  # Extract the lower nibble and shift left by 4 bits
@@ -208,14 +219,15 @@ class ModuleApplication(tk.Frame):
                 lock_status = "LOCKED"
             else:
                 lock_status = "UNLOCKED"
-            data = {"ROM ID": rom_id,
-                    "Battery message": raw_msg,
-                    "Charge count*": charge_count,
-                    "State": lock_status,
-                    "Status code": f'{error_byte:02X}',
-                    "Manufacturing date": f'{response[4]:02}/{response[3]:02}/20{response[2]:02}',
-                    "Capacity": f'{self.nibble_swap(response[26])/10}Ah',
-                    "Battery type": self.nibble_swap(response[21]),
+            data = {
+                "ROM ID": rom_id,
+                "Battery message": raw_msg,
+                "Charge count*": charge_count,
+                "State": lock_status,
+                "Status code": f'{error_byte:02X}',
+                "Manufacturing date": f'{response[4]:02}/{response[3]:02}/20{response[2]:02}',
+                "Capacity": f'{self.nibble_swap(response[26])/10}Ah',
+                "Battery type": self.nibble_swap(response[21]),
             }
             self.insert_battery_data(data)
             self.battery_present = True
@@ -232,8 +244,8 @@ class ModuleApplication(tk.Frame):
                 self.insert_battery_data(data)
                 return
 
-            except Exception as e:
-                last_exception = e
+            except Exception:
+                continue
 
         tk.messagebox.showerror("Error", "Battery is present but not supported.")
 
@@ -257,7 +269,7 @@ class ModuleApplication(tk.Frame):
                 v_cell3 = int.from_bytes(cell3[2:4], byteorder='little') / 1000
                 v_cell4 = int.from_bytes(cell4[2:4], byteorder='little') / 1000
                 v_cell5 = int.from_bytes(cell5[2:4], byteorder='little') / 1000
-                voltages = [v_cell1,v_cell2,v_cell3,v_cell4,v_cell5]
+                voltages = [v_cell1, v_cell2, v_cell3, v_cell4, v_cell5]
                 v_pack = sum(voltages)
                 v_diff = round(max(voltages) - min(voltages), 2)
                 t_cell = int.from_bytes(temp[2:4], byteorder='little') / 100
@@ -270,7 +282,7 @@ class ModuleApplication(tk.Frame):
                 v_cell3 = int.from_bytes(response[8:10], byteorder='little') / 1000
                 v_cell4 = int.from_bytes(response[10:12], byteorder='little') / 1000
                 v_cell5 = int.from_bytes(response[12:14], byteorder='little') / 1000
-                voltages = [v_cell1,v_cell2,v_cell3,v_cell4,v_cell5]
+                voltages = [v_cell1, v_cell2, v_cell3, v_cell4, v_cell5]
                 v_diff = round(max(voltages) - min(voltages), 2)
                 t_cell = int.from_bytes(response[16:18], byteorder='little') / 100
                 t_mosfet = int.from_bytes(response[18:20], byteorder='little') / 100
@@ -337,21 +349,21 @@ class ModuleApplication(tk.Frame):
             tk.messagebox.showerror("Error", "No interface specified.")
             return
 
-        try:
-            # TODO: Replace clean frame with the frame from the battery.
-            # 1. Read frame
-            # 2. set nibble 0
-            # 3. write as usual 
-            tk.messagebox.showerror("Error", "This feature is currently under development.")
-            return
-        
-            self.interface.request(TESTMODE_CMD)
-            self.interface.request(CHARGER_CMD)
-            self.interface.request(CLEAN_FRAME_CMD)
-            self.interface.request(STORE_CMD)
+        # TODO: Replace clean frame with the frame from the battery.
+        # 1. Read frame
+        # 2. set nibble 0
+        # 3. write as usual
+        tk.messagebox.showerror("Error", "This feature is currently under development.")
+        return
 
-        except Exception as e:
-            tk.messagebox.showerror("Error", f"Failed to reset message: {e}")
+        # Disabled code - will be enabled when feature is implemented
+        # try:
+        #     self.interface.request(TESTMODE_CMD)
+        #     self.interface.request(CHARGER_CMD)
+        #     self.interface.request(CLEAN_FRAME_CMD)
+        #     self.interface.request(STORE_CMD)
+        # except Exception as e:
+        #     tk.messagebox.showerror("Error", f"Failed to reset message: {e}")
 
     def insert_battery_data(self, data):
         for idx, (parameter, value) in enumerate(data.items()):

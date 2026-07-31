@@ -3,10 +3,12 @@ from tkinter import ttk
 import serial
 import serial.tools.list_ports
 
-INTERFACE_VERSION_CMD   = [0x01, 0x00, 0x03, 0x01]
+INTERFACE_VERSION_CMD = [0x01, 0x00, 0x03, 0x01]
+
 
 def get_display_name():
     return "Arduino OBI"
+
 
 class Interface(tk.Frame):
     def __init__(self, parent, obi_instance):
@@ -30,7 +32,6 @@ class Interface(tk.Frame):
         self.connect_button.pack(pady=10)
         self.connect_button.config(width=20)
 
-
         self.refresh_button = tk.Button(self, text="Refresh port list", command=self.refresh_serial_list)
         self.refresh_button.pack(pady=10)
         self.refresh_button.config(width=20)
@@ -41,7 +42,6 @@ class Interface(tk.Frame):
     def refresh_serial_list(self):
         ports = self.get_available_serial_ports()
         self.conf_port["values"] = ports
-
 
     def get_available_serial_ports(self):
         ports = [port.device for port in serial.tools.list_ports.comports()]
@@ -75,15 +75,15 @@ class Interface(tk.Frame):
     def get_version(self):
         response = self.request(INTERFACE_VERSION_CMD, max_attempts=5)
         version_string = '.'.join(str(byte) for byte in response[2:])
-    
+
         return version_string
-    
+
     def update_version(self):
         self.version_label.config(text=f"Version: {self.get_version()}")
 
     def request(self, request, max_attempts=2):
         if not self.serial.is_open:
-            raise Exception(f"Serial port is not open.")
+            raise Exception("Serial port is not open.")
 
         for attempt in range(1, max_attempts + 1):
             self.obi_instance.update_debug(f">> {' '.join(f'{x:02X}' for x in request[3:])}")
@@ -97,13 +97,12 @@ class Interface(tk.Frame):
                     return
 
                 if len(response) == request[2] + 2:
-                    
+
                     if all(byte == 0xff for byte in response[2:]):
                         raise ValueError("Invalid response: all bytes are 0xFF")
-                    
+
                     return response
 
             except Exception as e:
                 self.obi_instance.update_debug(f"Attempt {attempt}/{max_attempts} failed: {e}")
         raise Exception(f"Failed to get a valid response after {max_attempts} attempts.")
-

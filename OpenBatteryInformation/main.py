@@ -6,6 +6,7 @@ import importlib.util
 import pkgutil
 from components.default_module import DefaultModule
 
+
 class OBI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -17,7 +18,7 @@ class OBI(tk.Tk):
         self.loaded_modules = {}
         self.loaded_interfaces = {}
         self.module_names = {}
-        self.interface_names = {} 
+        self.interface_names = {}
 
         self.setup_sidebar()
         self.setup_main_window()
@@ -180,6 +181,7 @@ class OBI(tk.Tk):
             self.debug_text.config(state='disabled')
         else:
             print("Debug:", message)  # Fallback if debug_text isn't initialized
+
 
 if __name__ == "__main__":
     obi = OBI()
