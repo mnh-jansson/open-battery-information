@@ -1,5 +1,12 @@
 # ArduinoOBI
 
+This folder contains the Arduino firmware for the Open Battery Information interface. It turns a
+simple Arduino Uno (or ESP32-C3) into a battery BMS reader.
+
+The companion software is the web-based [OBI-1 tool](https://openbatteryinformation.github.io/),
+which connects to the board over Web Serial. It can also flash the firmware directly from your
+browser via the [firmware uploader](https://openbatteryinformation.github.io/firmware/uploader.html).
+
 ## Hardware
 
 This simple interface can be built using an Ardunio Uno and some external resistors. 
@@ -28,7 +35,7 @@ Ensure you have the following installed on your system:
 
 ---
 
-## Step 1: Clone the ArduinoOBI Repository
+## Step 1: Clone the Repository
 
 1. Open your terminal.
 2. Clone the repository using the command:
@@ -40,6 +47,7 @@ Ensure you have the following installed on your system:
 Or,
 
 1. Download the repository as a .ZIP file.
+2. Open the `ArduinoOBI` folder inside the repository.
 ---
 
 ## Step 2: Open the Project in VS Code
@@ -62,6 +70,13 @@ Or,
   Under "General", click Upload.
   PlatformIO will detect the correct port and upload the firmware to your Arduino UNO.
   A successful upload will display an "Upload complete" message in the terminal.
+
+## Next Steps
+
+The firmware is now running on your board. Open the
+[OBI-1 web tool](https://openbatteryinformation.github.io/obi.html) in Chrome or Edge, connect to the
+serial port of your board and read your battery. The web UI can also flash the firmware directly from
+the browser, see the [firmware uploader](https://openbatteryinformation.github.io/firmware/uploader.html).
 
 ---
 
