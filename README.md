@@ -7,8 +7,6 @@ In this case it would be wasteful to throw out a perfectly good BMS just because
 
 This is the problem we would like to solve!
 
-![schematic](docs/images/arduino-obi.png)
-
 > [!IMPORTANT]
 > **The desktop application is deprecated.**
 >
