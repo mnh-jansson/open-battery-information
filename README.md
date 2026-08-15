@@ -13,7 +13,9 @@ This is the problem we would like to solve!
 > **The desktop application is deprecated.**
 >
 > The old desktop application (Python/Tkinter) has been removed from this repository and is no longer
-> maintained. It has been replaced by a new web-based UI that runs in your browser:
+> maintained. The latest version of the Python application can be found in the
+> [`v0.2.3`](https://github.com/mnh-jansson/open-battery-information/tree/v0.2.3) tag. It has been
+> replaced by a new web-based UI that runs in your browser:
 >
 > - **Web UI / OBI-1 tool:** <https://github.com/OpenBatteryInformation/openbatteryinformation.github.io>
 > - **Live site:** <https://openbatteryinformation.github.io/>
