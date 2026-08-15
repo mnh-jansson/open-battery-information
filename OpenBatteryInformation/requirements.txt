@@ -1,2 +1,0 @@
-pyserial==3.5
-pillow==12.2.0
