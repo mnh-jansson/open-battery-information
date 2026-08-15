@@ -1,0 +1,54 @@
+name: Build firmware release assets
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO and esptool
+        run: pip install --upgrade platformio esptool
+
+      - name: Build Uno firmware
+        working-directory: ArduinoOBI
+        run: pio run -e uno
+
+      - name: Build ESP32-C3 firmware
+        working-directory: ArduinoOBI
+        run: pio run -e esp32-c3-devkitm-1
+
+      - name: Merge ESP32-C3 image
+        run: |
+          esptool.py --chip esp32c3 merge_bin \
+            -o esp32.bin --flash_mode dio --flash_size 4MB \
+            0x0 ArduinoOBI/.pio/build/esp32-c3-devkitm-1/bootloader.bin \
+            0x8000 ArduinoOBI/.pio/build/esp32-c3-devkitm-1/partitions.bin \
+            0x10000 ArduinoOBI/.pio/build/esp32-c3-devkitm-1/firmware.bin
+
+      - name: Copy Uno firmware to the workspace root
+        run: cp ArduinoOBI/.pio/build/uno/firmware.hex uno.hex
+
+      - name: Upload firmware assets to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name)"
+          fi
+          gh release upload "$TAG" uno.hex esp32.bin --clobber
