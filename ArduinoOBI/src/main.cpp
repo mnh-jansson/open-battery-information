@@ -2,11 +2,17 @@
 #include "OneWire2.h"
 
 /** Major version number (X.x.x) */
+#ifndef ARDUINO_OBI_VERSION_MAJOR
 #define ARDUINO_OBI_VERSION_MAJOR 0
+#endif
 /** Minor version number (x.X.x) */
-#define ARDUINO_OBI_VERSION_MINOR 2
+#ifndef ARDUINO_OBI_VERSION_MINOR
+#define ARDUINO_OBI_VERSION_MINOR 0
+#endif
 /** Patch version number (x.x.X) */
-#define ARDUINO_OBI_VERSION_PATCH 1
+#ifndef ARDUINO_OBI_VERSION_PATCH
+#define ARDUINO_OBI_VERSION_PATCH 0
+#endif
 
 #ifdef ESP_BUILD
 #define ONEWIRE_PIN ESP_OW_PIN
