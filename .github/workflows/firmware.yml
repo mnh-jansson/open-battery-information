@@ -27,6 +27,10 @@ jobs:
         working-directory: ArduinoOBI
         run: pio run -e uno
 
+      - name: Build NanoNew firmware
+        working-directory: ArduinoOBI
+        run: pio run -e nano_new
+
       - name: Build ESP32-C3 firmware
         working-directory: ArduinoOBI
         run: pio run -e esp32-c3-devkitm-1
@@ -41,6 +45,9 @@ jobs:
 
       - name: Copy Uno firmware to the workspace root
         run: cp ArduinoOBI/.pio/build/uno/firmware.hex uno.hex
+
+      - name: Copy NanoNew firmware to the workspace root
+        run: cp ArduinoOBI/.pio/build/nano_new/firmware.hex nano_new.hex
 
       - name: Upload firmware assets to the release
         env:
